@@ -101,7 +101,7 @@ function RoundGame({
   alchemyPolicyId: string;
 }) {
   const { sendTransaction } = useSendTransaction();
-  const [goal, setGoal] = useState(50);
+  const [goal, setGoal] = useState(() => session ? String(session.goal) : "");
   const [nickname, setNickname] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -145,14 +145,15 @@ function RoundGame({
   }, [phase, player?.joined, submitter]);
 
   const join = async () => {
-    if (goal < 1 || goal > 200) {
+    const numericGoal = Number(goal);
+    if (!Number.isInteger(numericGoal) || numericGoal < 1 || numericGoal > 200) {
       setError("Choose a goal from 1 to 200 taps.");
       return;
     }
     if (round.startBlock !== 0n) return;
     setBusy(true);
     setError(undefined);
-    const draft = session ?? createGoalSession(goal, nickname.trim());
+    const draft = session ?? createGoalSession(numericGoal, nickname.trim());
     try {
       const tapperAddress = await sponsoredAccountAddress({
         apiKey: alchemyApiKey,

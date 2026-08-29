@@ -18,12 +18,12 @@ export function PlayerSetup({
   roundId: bigint;
   feed: string;
   round: RoundState;
-  goal: number;
+  goal: string;
   nickname: string;
   busy: boolean;
   session: GoalSession | null;
   error?: string;
-  onGoal: (goal: number) => void;
+  onGoal: (goal: string) => void;
   onNickname: (nickname: string) => void;
   onJoin: () => void;
 }) {
@@ -33,7 +33,7 @@ export function PlayerSetup({
       <h1>Predict your taps.</h1>
       <p className="cost-note">{round.playerCount} joined · capacity {round.maxPlayers} · host starts the shared round</p>
       <form className="setup-form" onSubmit={(event) => { event.preventDefault(); onJoin(); }}>
-        <label htmlFor="goal">Goal<input id="goal" name="goal" type="number" inputMode="numeric" min={1} max={200} required value={goal} onChange={(event) => onGoal(Number(event.target.value))} /></label>
+        <label htmlFor="goal">Goal<input id="goal" name="goal" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={3} placeholder="50" required value={goal} onFocus={(event) => event.currentTarget.select()} onChange={(event) => onGoal(event.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, ""))} /></label>
         <label htmlFor="nickname">Nickname · optional<input id="nickname" name="nickname" autoComplete="nickname" maxLength={16} value={nickname} onChange={(event) => onNickname(event.target.value)} /></label>
         <button type="submit" className="primary-button" disabled={busy || round.startBlock !== 0n}>
           {busy ? "Sponsoring commitment…" : session ? "Resubmit commitment" : "Lock goal"}
