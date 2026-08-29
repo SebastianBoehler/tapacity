@@ -256,7 +256,7 @@ function RoundGame({
       <main className="setup-screen">
         <Header roundId={roundId} feed={feed.connection} />
         <h1>Predict your taps.</h1>
-        <p className="cost-note">{round.playerCount}/{round.maxPlayers} players joined · host starts the shared round</p>
+        <p className="cost-note">{round.playerCount} joined · capacity {round.maxPlayers} · host starts the shared round</p>
         <form className="setup-form" onSubmit={(event) => { event.preventDefault(); void join(); }}>
           <label htmlFor="goal">Goal<input id="goal" name="goal" type="number" inputMode="numeric" min={1} max={200} required value={goal} onChange={(event) => setGoal(Number(event.target.value))} /></label>
           <label htmlFor="nickname">Nickname · optional<input id="nickname" name="nickname" autoComplete="nickname" maxLength={16} value={nickname} onChange={(event) => setNickname(event.target.value)} /></label>
@@ -279,7 +279,7 @@ function RoundGame({
       <Header roundId={roundId} feed={feed.connection} />
       <section className="phase-panel">
         <h2>{phaseLabel(phase)}</h2>
-        <strong>{phase === "waiting" ? `${round.playerCount}/${round.maxPlayers} JOINED` : phase === "lobby" ? `${secondsUntil(round.startBlock, blockNumber)}s` : phase === "live" ? `${secondsUntil(round.endBlock, blockNumber)}s` : "—"}</strong>
+        <strong>{phase === "waiting" ? `${round.playerCount} JOINED` : phase === "lobby" ? `${secondsUntil(round.startBlock, blockNumber)}s` : phase === "live" ? `${secondsUntil(round.endBlock, blockNumber)}s` : "—"}</strong>
       </section>
       {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={proposed} finalized={finalized} />}
       <div className="telemetry-row" aria-label="Transaction telemetry">

@@ -11,6 +11,7 @@ export function HostConsole({ contract }: { contract: `0x${string}` }) {
     const saved = readStored("tapacity:host-round");
     return /^\d+$/.test(saved) ? BigInt(saved) : undefined;
   });
+  const [capacity, setCapacity] = useState(20);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -22,7 +23,7 @@ export function HostConsole({ contract }: { contract: `0x${string}` }) {
       const response = await fetch("/api/host", {
         method: "POST",
         headers: { authorization: `Bearer ${hostKey}`, "content-type": "application/json" },
-        body: JSON.stringify({ action: name, roundId: target?.toString() }),
+        body: JSON.stringify({ action: name, roundId: target?.toString(), maxPlayers: capacity }),
       });
       const result = await response.json() as { error?: string; roundId?: string };
       if (!response.ok || !result.roundId) throw new Error(result.error ?? "Host action failed");
@@ -43,6 +44,7 @@ export function HostConsole({ contract }: { contract: `0x${string}` }) {
       <h1>Run the room.</h1>
       <div className="host-controls">
         <label htmlFor="host-key">Host key<input id="host-key" type="password" value={hostKey} onChange={(event) => setHostKey(event.target.value)} /></label>
+        <label htmlFor="capacity">Room capacity<input id="capacity" type="number" min={1} max={32} value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label>
         <button className="primary-button" disabled={busy || !hostKey} onClick={() => void action("create")}>{busy ? "Finalizing…" : "Create round"}</button>
         <label htmlFor="round-id">Round number<input id="round-id" inputMode="numeric" value={roundInput} onChange={(event) => setRoundInput(event.target.value)} /></label>
         <button className="secondary-button host-secondary" disabled={!/^\d+$/.test(roundInput)} onClick={() => setRoundId(BigInt(roundInput))}>Open round</button>
@@ -72,7 +74,7 @@ function HostRound({
   return (
     <section className="host-round">
       <div className="host-room-head"><h2>Round {roundId.toString()}</h2><strong>{label(phase)}</strong></div>
-      <div className="host-metrics"><HostMetric label="Joined" value={`${round.playerCount}/${round.maxPlayers}`} /><HostMetric label="Block" value={blockNumber.toString()} /><HostMetric label="Grant" value={`${Number(round.tapGrantWei / 10n ** 15n) / 1000} MON`} /></div>
+      <div className="host-metrics"><HostMetric label="Joined" value={round.playerCount.toString()} /><HostMetric label="Capacity" value={round.maxPlayers.toString()} /><HostMetric label="Grant each" value={`${Number(round.tapGrantWei / 10n ** 15n) / 1000} MON`} /></div>
       <label htmlFor="join-url">Join link<input id="join-url" readOnly value={joinPath} /></label>
       <button className="secondary-button host-secondary" onClick={() => void navigator.clipboard.writeText(new URL(joinPath, window.location.origin).toString())}>Copy join link</button>
       {phase === "waiting" && <button className="primary-button" disabled={busy || round.playerCount === 0} onClick={() => void action("start", roundId)}>Start shared countdown</button>}

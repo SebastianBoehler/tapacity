@@ -4,7 +4,11 @@ import { adminConfig, HostError, requireHost } from "@/lib/admin/server";
 import { publicClient } from "@/lib/chain";
 import { tapacityAbi } from "@/lib/contract/abi";
 
-type HostRequest = { action?: "create" | "start" | "settle"; roundId?: string };
+type HostRequest = {
+  action?: "create" | "start" | "settle";
+  roundId?: string;
+  maxPlayers?: number;
+};
 
 export async function POST(request: Request) {
   try {
@@ -13,11 +17,15 @@ export async function POST(request: Request) {
     const { contract, wallet } = adminConfig();
 
     if (body.action === "create") {
+      const maxPlayers = body.maxPlayers;
+      if (!Number.isInteger(maxPlayers) || !maxPlayers || maxPlayers < 1 || maxPlayers > 32) {
+        throw new HostError("Capacity must be from 1 to 32", 400);
+      }
       const hash = await wallet.writeContract({
         address: contract,
         abi: tapacityAbi,
         functionName: "createRound",
-        args: [50, 50, 15, parseEther("2")],
+        args: [50, 50, maxPlayers, parseEther("2")],
       });
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       for (const log of receipt.logs) {
