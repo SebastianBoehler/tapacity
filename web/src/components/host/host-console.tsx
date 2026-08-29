@@ -7,15 +7,23 @@ import { HostResults } from "./host-results";
 import { HostJoin } from "./host-join";
 
 export function HostConsole({ contract, origin }: { contract: `0x${string}`; origin: string }) {
-  const [roundInput, setRoundInput] = useState(() => readStored("tapacity:host-round"));
-  const [roundId, setRoundId] = useState<bigint | undefined>(() => {
-    const saved = readStored("tapacity:host-round");
-    return /^\d+$/.test(saved) ? BigInt(saved) : undefined;
-  });
+  const [roundInput, setRoundInput] = useState("");
+  const [roundId, setRoundId] = useState<bigint>();
   const [capacity, setCapacity] = useState(20);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [presenting, setPresenting] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("tapacity:host-round") ?? "";
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setRoundInput(saved);
+      if (/^\d+$/.test(saved)) setRoundId(BigInt(saved));
+    });
+    return () => { active = false; };
+  }, []);
 
   const action = async (name: "create" | "start" | "settle", target?: bigint) => {
     setBusy(true);
@@ -120,9 +128,4 @@ function HostMetric({ label, value }: { label: string; value: string }) {
 
 function label(phase: string) {
   return { waiting: "LOBBY OPEN", lobby: "COUNTDOWN", live: "ROUND LIVE", reveal: "REVEAL", settlement: "SETTLEMENT" }[phase];
-}
-
-function readStored(key: string) {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem(key) ?? "";
 }
