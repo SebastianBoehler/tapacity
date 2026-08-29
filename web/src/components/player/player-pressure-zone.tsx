@@ -1,17 +1,22 @@
+import type { CSSProperties } from "react";
+
 export function PlayerPressureZone({
   phase,
   startBlock,
   blockNumber,
+  laneColor,
   onTap,
 }: {
   phase: string;
   startBlock: bigint;
   blockNumber: bigint;
+  laneColor: string;
   onTap: () => void;
 }) {
   return (
     <button
-      className={`tap-zone is-${phase}`}
+      className={`tap-zone has-lane is-${phase}`}
+      style={{ "--lane-color": laneColor } as CSSProperties}
       disabled={phase !== "live"}
       onPointerDown={(event) => { event.preventDefault(); onTap(); }}
       onKeyDown={(event) => {

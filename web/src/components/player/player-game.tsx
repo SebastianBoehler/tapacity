@@ -1,7 +1,7 @@
 "use client";
 
 import { useSendTransaction } from "@privy-io/react-auth";
-import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { encodeFunctionData } from "viem";
 import { tapacityAbi } from "@/lib/contract/abi";
 import { type PlayerState, type RoundState, useChainState } from "@/lib/contract/use-chain-state";
@@ -16,6 +16,7 @@ import {
   type GoalSession,
 } from "@/lib/session/goal-session";
 import { useFinalityPersistence } from "@/lib/session/use-finality-persistence";
+import { fallbackPlayerName, playerLaneColor } from "@/lib/round/live-race";
 import { retryRateLimited } from "@/lib/transactions/retry-rate-limit";
 import { sponsoredAccountAddress } from "@/lib/transactions/alchemy-smart-account";
 import { useSponsoredTapSubmitter } from "@/lib/transactions/use-sponsored-tap-submitter";
@@ -247,12 +248,18 @@ function RoundGame({
   const finalized = Math.max(feed.finalized, player.taps);
   const voted = Math.max(feed.voted, finalized);
   const proposed = Math.max(feed.proposed, voted);
+  const laneColor = playerLaneColor(address);
+  const laneName = session?.nickname.trim() || fallbackPlayerName(address);
+  const laneStyle = { "--lane-color": laneColor } as CSSProperties;
   return (
     <main className={`play-screen ${phase === "live" ? "is-live" : ""}`}>
       <h1 className="sr-only">TAPACITY round {roundId.toString()}</h1>
       <Header roundId={roundId} feed={feed.connection} />
       <section className="phase-panel">
-        <h2>{phaseLabel(phase)}</h2>
+        <div>
+          <h2>{phaseLabel(phase)}</h2>
+          <span className="player-lane-cue" style={laneStyle}><i aria-hidden="true" />Your lane · {laneName}</span>
+        </div>
         <strong>{phase === "waiting" ? `${round.playerCount} JOINED` : phase === "lobby" ? "GET READY" : phase === "live" ? `${secondsUntil(round.endBlock, blockNumber)}s` : "—"}</strong>
       </section>
       {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={proposed} finalized={finalized} />}
@@ -265,7 +272,7 @@ function RoundGame({
       </div>
       {error && <p className="error-note" role="alert">{error}</p>}
       {phase === "reveal" && !player.revealed && <button className="secondary-button" onClick={() => void reveal()}>Retry sponsored reveal</button>}
-      <PlayerPressureZone phase={phase} startBlock={round.startBlock} blockNumber={blockNumber} onTap={tap} />
+      <PlayerPressureZone phase={phase} startBlock={round.startBlock} blockNumber={blockNumber} laneColor={laneColor} onTap={tap} />
     </main>
   );
 }

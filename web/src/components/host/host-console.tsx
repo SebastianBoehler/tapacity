@@ -5,8 +5,11 @@ import { useChainState } from "@/lib/contract/use-chain-state";
 import { currentPhase } from "@/components/player/round-phase";
 import { HostResults } from "./host-results";
 import { HostJoin } from "./host-join";
+import { HostLiveRace } from "./host-live-race";
 import { HostRoundArchive } from "./host-round-archive";
 import { useRoundLatency } from "./use-round-latency";
+
+type HostStage = "controls" | "racing" | "results";
 
 export function HostConsole({
   contract,
@@ -22,7 +25,7 @@ export function HostConsole({
   const [capacity, setCapacity] = useState(32);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const [presenting, setPresenting] = useState(false);
+  const [stage, setStage] = useState<HostStage>("controls");
 
   useEffect(() => {
     if (initialRoundId) {
@@ -41,7 +44,7 @@ export function HostConsole({
 
   const rememberRound = (nextRound: bigint) => {
     const value = nextRound.toString();
-    setPresenting(false);
+    setStage("controls");
     setRoundId(nextRound);
     setRoundInput(value);
     localStorage.setItem("tapacity:host-round", value);
@@ -71,7 +74,7 @@ export function HostConsole({
   const newRound = () => {
     setRoundId(undefined);
     setRoundInput("");
-    setPresenting(false);
+    setStage("controls");
     localStorage.removeItem("tapacity:host-round");
     history.replaceState(null, "", "/host");
   };
@@ -82,9 +85,9 @@ export function HostConsole({
   };
 
   return (
-    <main className={presenting ? "host-screen is-presenting" : "host-screen"}>
-      {!presenting && <h1>Run the room.</h1>}
-      {!presenting && <div className="host-controls">
+    <main className={`host-screen ${stage === "results" ? "is-presenting" : stage === "racing" ? "is-racing" : ""}`}>
+      {stage === "controls" && <h1>Run the room.</h1>}
+      {stage === "controls" && <div className="host-controls">
         <label htmlFor="capacity">Maximum players<input id="capacity" type="number" min={1} max={32} value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label>
         <button className="primary-button host-create-button" disabled={busy} onClick={() => void action("create")}>{busy ? "Creating onchain lobby…" : "Create new round"}</button>
         <details className="existing-round">
@@ -96,7 +99,7 @@ export function HostConsole({
           </div>
         </details>
       </div>}
-      {roundId && <HostRound contract={contract} origin={origin} roundId={roundId} busy={busy} action={action} onPresenting={setPresenting} onNewRound={newRound} />}
+      {roundId && <HostRound key={roundId.toString()} contract={contract} origin={origin} roundId={roundId} busy={busy} action={action} onStage={setStage} onNewRound={newRound} />}
       {!roundId && <HostRoundArchive contract={contract} onOpen={rememberRound} />}
       {error && <p className="error-note" role="alert">{error}</p>}
     </main>
@@ -109,7 +112,7 @@ function HostRound({
   roundId,
   busy,
   action,
-  onPresenting,
+  onStage,
   onNewRound,
 }: {
   contract: `0x${string}`;
@@ -117,12 +120,12 @@ function HostRound({
   roundId: bigint;
   busy: boolean;
   action: (name: "create" | "start" | "settle", target?: bigint) => Promise<void>;
-  onPresenting: (presenting: boolean) => void;
+  onStage: (stage: HostStage) => void;
   onNewRound: () => void;
 }) {
   const { blockNumber, round, ranking, error } = useChainState(contract, roundId);
   const medianFinalityMs = useRoundLatency(contract, roundId);
-  useEffect(() => onPresenting(Boolean(round?.settled)), [onPresenting, round?.settled]);
+  useEffect(() => onStage(round?.settled ? "results" : round?.startBlock ? "racing" : "controls"), [onStage, round?.settled, round?.startBlock]);
   if (error && !round) return <p className="error-note">{error}</p>;
   if (!blockNumber || !round) return <p className="host-status">Syncing round {roundId.toString()}…</p>;
   if (round.creator === "0x0000000000000000000000000000000000000000") return <p className="error-note" role="alert">Round {roundId.toString()} does not exist on this contract.</p>;
@@ -131,12 +134,19 @@ function HostRound({
   return (
     <section className="host-round">
       <div className="host-room-head"><h2>Round {roundId.toString()}</h2><strong>{label(phase)}</strong></div>
-      <div className="host-metrics"><HostMetric label="Joined" value={round.playerCount.toString()} /><HostMetric label="Capacity" value={round.maxPlayers.toString()} /><HostMetric label="Tap gas" value="Sponsored" /></div>
-      <HostJoin origin={origin} roundId={roundId} />
-      {phase === "waiting" && <button className="primary-button" disabled={busy || round.playerCount === 0} onClick={() => void action("start", roundId)}>Start shared countdown</button>}
-      {phase === "lobby" && <p className="host-round-status">Countdown running on player devices.</p>}
-      {phase === "live" && <p className="host-round-status">Round live on {round.playerCount} player device{round.playerCount === 1 ? "" : "s"}.</p>}
-      {phase === "reveal" && <p className="host-round-status">Players are revealing goals automatically.</p>}
+      {phase === "waiting" && <>
+        <div className="host-metrics"><HostMetric label="Joined" value={round.playerCount.toString()} /><HostMetric label="Capacity" value={round.maxPlayers.toString()} /><HostMetric label="Tap gas" value="Sponsored" /></div>
+        <HostJoin origin={origin} roundId={roundId} />
+        <button className="primary-button" disabled={busy || round.playerCount === 0} onClick={() => void action("start", roundId)}>Start shared countdown</button>
+      </>}
+      {phase !== "waiting" && <HostLiveRace
+        contract={contract}
+        roundId={roundId}
+        startBlock={round.startBlock}
+        endBlock={round.endBlock}
+        expectedPlayers={round.playerCount}
+        phase={phase}
+      />}
       {phase === "settlement" && !round.settled && <button className="primary-button" disabled={busy} onClick={() => void action("settle", roundId)}>Settle results</button>}
     </section>
   );

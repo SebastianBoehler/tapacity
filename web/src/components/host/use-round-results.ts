@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { hexToString } from "viem";
 import { tapacityAbi } from "@/lib/contract/abi";
 import type { PlayerState, RoundState } from "@/lib/contract/use-chain-state";
 import { publicClient } from "@/lib/chain";
 import { compareTapProof, operationId, type TapProofRecord } from "@/lib/proof/tap-proof";
+import { displayPlayerName } from "@/lib/round/live-race";
 import { summarizeRound, type RoundSummary } from "@/lib/round/round-insights";
 
 export type RankedPlayer = {
@@ -89,7 +89,7 @@ export function useRoundResults({
           const state = states[index] as PlayerState;
           return {
             address,
-            name: displayName(state.nickname, address),
+            name: displayPlayerName(state.nickname, address),
             finalized: state.taps,
             goal: state.goal,
             accuracyPpm: state.accuracyPpm,
@@ -120,14 +120,4 @@ export function useRoundResults({
 
 function range(start: bigint, end: bigint) {
   return Array.from({ length: Number(end - start) }, (_, index) => start + BigInt(index));
-}
-
-function displayName(nickname: `0x${string}`, address: `0x${string}`) {
-  try {
-    const decoded = hexToString(nickname).replaceAll("\0", "").trim();
-    if (decoded) return decoded;
-  } catch {
-    // A malformed optional nickname still has a deterministic address label.
-  }
-  return `Guest ${address.slice(2, 6).toUpperCase()}`;
 }
