@@ -12,12 +12,14 @@ export function HostResults({
   roundId,
   round,
   ranking,
+  medianFinalityMs,
   onNewRound,
 }: {
   contract: `0x${string}`;
   roundId: bigint;
   round: RoundState;
   ranking: readonly `0x${string}`[];
+  medianFinalityMs?: number;
   onNewRound: () => void;
 }) {
   const { results, error } = useRoundResults({ contract, roundId, round, ranking });
@@ -57,6 +59,7 @@ export function HostResults({
           <Metric value={formatOptionalPercent(summary.tapacitySharePercent, 2)} label="Block activity share" />
           <Metric value={summary.activeLanes.toString()} label="Independent lanes" />
           <Metric value={summary.tapacityTransactions.toString()} label="Outer transactions" />
+          <Metric value={medianFinalityMs === undefined ? "—" : `${Math.round(medianFinalityMs)} ms`} label="Median proposal → finality" />
         </div>
       </section>
 

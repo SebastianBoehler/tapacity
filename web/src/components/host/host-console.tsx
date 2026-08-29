@@ -6,6 +6,7 @@ import { currentPhase } from "@/components/player/round-phase";
 import { HostResults } from "./host-results";
 import { HostJoin } from "./host-join";
 import { HostRoundArchive } from "./host-round-archive";
+import { useRoundLatency } from "./use-round-latency";
 
 export function HostConsole({
   contract,
@@ -120,11 +121,12 @@ function HostRound({
   onNewRound: () => void;
 }) {
   const { blockNumber, round, ranking, error } = useChainState(contract, roundId);
+  const medianFinalityMs = useRoundLatency(contract, roundId);
   useEffect(() => onPresenting(Boolean(round?.settled)), [onPresenting, round?.settled]);
   if (error && !round) return <p className="error-note">{error}</p>;
   if (!blockNumber || !round) return <p className="host-status">Syncing round {roundId.toString()}…</p>;
   if (round.creator === "0x0000000000000000000000000000000000000000") return <p className="error-note" role="alert">Round {roundId.toString()} does not exist on this contract.</p>;
-  if (round.settled) return <HostResults contract={contract} roundId={roundId} round={round} ranking={ranking} onNewRound={onNewRound} />;
+  if (round.settled) return <HostResults contract={contract} roundId={roundId} round={round} ranking={ranking} medianFinalityMs={medianFinalityMs} onNewRound={onNewRound} />;
   const phase = currentPhase(blockNumber, round);
   return (
     <section className="host-round">
