@@ -18,7 +18,7 @@ export function HostConsole({
 }) {
   const [roundInput, setRoundInput] = useState(initialRoundId ?? "");
   const [roundId, setRoundId] = useState<bigint | undefined>(() => initialRoundId ? BigInt(initialRoundId) : undefined);
-  const [capacity, setCapacity] = useState(20);
+  const [capacity, setCapacity] = useState(32);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [presenting, setPresenting] = useState(false);
