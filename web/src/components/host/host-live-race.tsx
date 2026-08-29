@@ -45,9 +45,9 @@ export function HostLiveRace({
             return (
               <li key={lane.address} style={style}>
                 <strong className="live-race-rank">#{lane.rank}</strong>
+                <span className="live-race-name">{lane.name}</span>
                 <span className="live-race-track" aria-label={`${lane.name}: ${lane.taps} taps`}>
                   <i aria-hidden="true" />
-                  <span className="live-race-track-name">{lane.name}</span>
                 </span>
                 <strong className="live-race-taps">{lane.taps}</strong>
               </li>

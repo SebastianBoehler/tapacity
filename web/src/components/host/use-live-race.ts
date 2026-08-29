@@ -16,7 +16,7 @@ import {
   type LiveRaceLane,
 } from "@/lib/round/live-race";
 
-const JOIN_LOOKBACK_BLOCKS = 10_000n;
+const JOIN_LOOKBACK_BLOCKS = 1_000n;
 
 export function useLiveRace({
   contract,

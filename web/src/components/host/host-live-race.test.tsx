@@ -40,7 +40,7 @@ describe("host live race", () => {
     );
 
     expect(html).toContain("live-race-lanes is-sparse");
-    expect(html).toMatch(/class="live-race-track"[^>]*>.*Alice.*<\/span>/);
-    expect(html).toMatch(/class="live-race-track"[^>]*>.*Bob.*<\/span>/);
+    expect(html).toContain('<span class="live-race-name">Alice</span>');
+    expect(html).toContain('<span class="live-race-name">Bob</span>');
   });
 });

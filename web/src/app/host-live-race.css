@@ -77,7 +77,7 @@
 
 .live-race-lanes li {
   display: grid;
-  grid-template-columns: 3.3rem minmax(8rem, 1fr) 3.5rem;
+  grid-template-columns: 3.3rem minmax(6rem, 11rem) minmax(8rem, 1fr) 3.5rem;
   gap: clamp(0.55rem, 1.2vw, 1rem);
   align-items: center;
   min-height: clamp(1.55rem, 3.7vh, 2.5rem);
@@ -88,11 +88,11 @@
 }
 
 .live-race-lanes.is-sparse li {
-  grid-template-columns: clamp(4rem, 6vw, 5.5rem) minmax(8rem, 1fr) clamp(4.5rem, 7vw, 6.5rem);
+  grid-template-columns: clamp(4rem, 6vw, 5.5rem) minmax(8rem, 15rem) minmax(8rem, 1fr) clamp(4.5rem, 7vw, 6.5rem);
 }
 
 .live-race-lanes.is-dense li {
-  grid-template-columns: 2.7rem minmax(6rem, 1fr) 3rem;
+  grid-template-columns: 2.7rem minmax(5rem, 8rem) minmax(6rem, 1fr) 3rem;
   min-height: clamp(1.35rem, 3vh, 2rem);
 }
 
@@ -139,17 +139,13 @@
   transition: width 220ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.live-race-track-name {
-  position: relative;
-  z-index: 1;
+.live-race-name {
   min-width: 0;
   overflow: hidden;
-  padding-inline: clamp(0.6rem, 1.2vw, 1rem);
   color: var(--text);
   font-size: clamp(0.76rem, 1.7vh, 1rem);
   font-weight: 800;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 3px oklch(0 0 0 / 0.95);
   white-space: nowrap;
 }
 
@@ -157,8 +153,7 @@
   height: clamp(4rem, 10vh, 6rem);
 }
 
-.live-race-lanes.is-sparse .live-race-track-name {
-  padding-inline: clamp(1rem, 2vw, 1.5rem);
+.live-race-lanes.is-sparse .live-race-name {
   font-size: clamp(1.3rem, 3.4vh, 2rem);
 }
 
@@ -166,7 +161,7 @@
   height: clamp(2.6rem, 6vh, 3.8rem);
 }
 
-.live-race-lanes.is-roomy .live-race-track-name {
+.live-race-lanes.is-roomy .live-race-name {
   font-size: clamp(1rem, 2.4vh, 1.35rem);
 }
 
@@ -212,12 +207,12 @@
   }
 
   .live-race-lanes li {
-    grid-template-columns: 2.7rem minmax(5rem, 1fr) 2.5rem;
+    grid-template-columns: 2.7rem minmax(4.5rem, 7rem) minmax(5rem, 1fr) 2.5rem;
     gap: 0.45rem;
   }
 
   .live-race-lanes.is-sparse li {
-    grid-template-columns: 3rem minmax(5rem, 1fr) 3.2rem;
+    grid-template-columns: 3rem minmax(5rem, 8rem) minmax(5rem, 1fr) 3.2rem;
   }
 }
 
