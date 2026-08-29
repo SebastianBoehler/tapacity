@@ -113,7 +113,7 @@ Measured application results and documented protocol capacity are labeled separa
 | One-player Testnet loop | Verified | New contract round 3: balance remained zero, 8/8 taps finalized, reveal and settlement succeeded; full Privy browser rehearsal remains |
 | Five-wallet load probe | Specified | Admitted only after one-player pass |
 | Room-envelope probe | Specified | Admitted only after five-wallet pass |
-| Host room control | Verified | Production `/host` created round 3, showed joined count, and started a synchronized 2.4-second observed countdown |
+| Host room control | Implemented | `/host` creates, starts, and settles rounds without a separate demo credential; production verification pending |
 | Vercel deployment | Implemented | Replacement contract `0x6adA9a80D616Ce2Bd0FAaf0dD26c52E8f7985241` verified; web revision awaiting production deployment |
 | Three-minute demo | Implemented | Player loop and responsive projector analytics exist; multi-browser rehearsal remains |
 

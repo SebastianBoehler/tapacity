@@ -1,6 +1,6 @@
 import { decodeEventLog } from "viem";
 import { NextResponse } from "next/server";
-import { adminConfig, HostError, requireHost } from "@/lib/admin/server";
+import { adminConfig, HostError } from "@/lib/admin/server";
 import { publicClient } from "@/lib/chain";
 import { tapacityAbi } from "@/lib/contract/abi";
 
@@ -12,7 +12,6 @@ type HostRequest = {
 
 export async function POST(request: Request) {
   try {
-    requireHost(request);
     const body = await request.json() as HostRequest;
     const { contract, wallet } = adminConfig();
 

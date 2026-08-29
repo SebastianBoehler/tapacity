@@ -7,7 +7,6 @@ import { HostResults } from "./host-results";
 import { HostJoin } from "./host-join";
 
 export function HostConsole({ contract, origin }: { contract: `0x${string}`; origin: string }) {
-  const [hostKey, setHostKey] = useState(() => readStored("tapacity:host-key", true));
   const [roundInput, setRoundInput] = useState(() => readStored("tapacity:host-round"));
   const [roundId, setRoundId] = useState<bigint | undefined>(() => {
     const saved = readStored("tapacity:host-round");
@@ -21,11 +20,10 @@ export function HostConsole({ contract, origin }: { contract: `0x${string}`; ori
   const action = async (name: "create" | "start" | "settle", target?: bigint) => {
     setBusy(true);
     setError(undefined);
-    sessionStorage.setItem("tapacity:host-key", hostKey);
     try {
       const response = await fetch("/api/host", {
         method: "POST",
-        headers: { authorization: `Bearer ${hostKey}`, "content-type": "application/json" },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: name, roundId: target?.toString(), maxPlayers: capacity }),
       });
       const result = await response.json() as { error?: string; roundId?: string };
@@ -61,9 +59,8 @@ export function HostConsole({ contract, origin }: { contract: `0x${string}`; ori
     <main className={presenting ? "host-screen is-presenting" : "host-screen"}>
       {!presenting && <h1>Run the room.</h1>}
       {!presenting && <div className="host-controls">
-        <label htmlFor="host-key">Host key<input id="host-key" type="password" value={hostKey} onChange={(event) => setHostKey(event.target.value)} /></label>
         <label htmlFor="capacity">Maximum players<input id="capacity" type="number" min={1} max={32} value={capacity} onChange={(event) => setCapacity(Number(event.target.value))} /></label>
-        <button className="primary-button host-create-button" disabled={busy || !hostKey} onClick={() => void action("create")}>{busy ? "Creating onchain lobby…" : "Create new round"}</button>
+        <button className="primary-button host-create-button" disabled={busy} onClick={() => void action("create")}>{busy ? "Creating onchain lobby…" : "Create new round"}</button>
         <details className="existing-round">
           <summary>Open an existing round</summary>
           <p>Load a previous lobby or result without creating anything onchain.</p>
@@ -128,7 +125,7 @@ function label(phase: string) {
   return { waiting: "LOBBY OPEN", lobby: "COUNTDOWN", live: "ROUND LIVE", reveal: "REVEAL", settlement: "SETTLEMENT" }[phase];
 }
 
-function readStored(key: string, session = false) {
+function readStored(key: string) {
   if (typeof window === "undefined") return "";
-  return (session ? sessionStorage : localStorage).getItem(key) ?? "";
+  return localStorage.getItem(key) ?? "";
 }

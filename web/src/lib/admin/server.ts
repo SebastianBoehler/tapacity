@@ -2,13 +2,6 @@ import { createWalletClient, http, isAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { tapacityChain } from "@/lib/chain";
 
-export function requireHost(request: Request) {
-  const expected = process.env.TAPACITY_HOST_KEY;
-  if (!expected || request.headers.get("authorization") !== `Bearer ${expected}`) {
-    throw new HostError("Host key rejected", 401);
-  }
-}
-
 export function adminConfig() {
   const privateKey = process.env.TAPACITY_ADMIN_PRIVATE_KEY as Hex | undefined;
   const contract = process.env.NEXT_PUBLIC_TAPACITY_CONTRACT;
