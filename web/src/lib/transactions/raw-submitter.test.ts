@@ -30,7 +30,7 @@ describe("raw tap transaction seam", () => {
       to: contract,
       value: 0n,
       nonce: 12,
-      gasLimit: 50_000n,
+      gasLimit: 90_000n,
       chainId: 10_143,
       type: 2,
     });

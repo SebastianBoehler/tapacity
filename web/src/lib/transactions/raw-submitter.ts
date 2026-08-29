@@ -20,7 +20,7 @@ export type SubmissionResult =
   | { attemptId: string; status: "failed"; error: string; nonce?: number };
 
 const CHAIN_ID = 10_143;
-const TAP_GAS_LIMIT = 50_000n;
+const TAP_GAS_LIMIT = 90_000n;
 const MAX_CONCURRENT_SUBMISSIONS = 6;
 
 export function createRawSubmitter({

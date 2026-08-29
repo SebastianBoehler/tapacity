@@ -281,7 +281,7 @@ function RoundGame({
         <h2>{phaseLabel(phase)}</h2>
         <strong>{phase === "waiting" ? `${round.playerCount}/${round.maxPlayers} JOINED` : phase === "lobby" ? `${round.startBlock - blockNumber} BLOCKS` : phase === "live" ? `${round.endBlock - blockNumber} BLOCKS` : "—"}</strong>
       </section>
-      {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={Math.max(proposed, session.submitted)} finalized={finalized} />}
+      {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={proposed} finalized={finalized} />}
       <div className="telemetry-row" aria-label="Transaction telemetry">
         <Metric label="ATT" value={session?.attempted ?? 0} />
         <Metric label="SUB" value={session?.submitted ?? 0} />
