@@ -93,7 +93,7 @@ export function useChainState(
     };
 
     void refresh();
-    const timer = setInterval(() => void refresh(), 1_200);
+    const timer = setInterval(() => void refresh(), 2_000);
     return () => {
       active = false;
       clearInterval(timer);

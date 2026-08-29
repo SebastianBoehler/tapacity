@@ -279,7 +279,7 @@ function RoundGame({
       <Header roundId={roundId} feed={feed.connection} />
       <section className="phase-panel">
         <h2>{phaseLabel(phase)}</h2>
-        <strong>{phase === "waiting" ? `${round.playerCount}/${round.maxPlayers} JOINED` : phase === "lobby" ? `${round.startBlock - blockNumber} BLOCKS` : phase === "live" ? `${round.endBlock - blockNumber} BLOCKS` : "—"}</strong>
+        <strong>{phase === "waiting" ? `${round.playerCount}/${round.maxPlayers} JOINED` : phase === "lobby" ? `${secondsUntil(round.startBlock, blockNumber)}s` : phase === "live" ? `${secondsUntil(round.endBlock, blockNumber)}s` : "—"}</strong>
       </section>
       {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={proposed} finalized={finalized} />}
       <div className="telemetry-row" aria-label="Transaction telemetry">
@@ -307,4 +307,8 @@ function RoundGame({
 
 function message(cause: unknown) {
   return cause instanceof Error ? cause.message : "Transaction failed";
+}
+
+function secondsUntil(target: bigint, block: bigint) {
+  return Math.max(0, Number(target - block) * 0.4).toFixed(1);
 }
