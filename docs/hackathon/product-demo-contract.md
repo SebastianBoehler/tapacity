@@ -6,8 +6,8 @@ Demo rehearsal window: feature freeze through presentation.
 
 ## AI-native delivery budget
 
-- **Committed core:** one zero-balance guest completes the fully sponsored Testnet loop, refreshes, and sees the same result; then prove five wallets and the room envelope.
-- **Expected cycles:** contract kernel (green), Privy sponsored-submission adapter (green), guest auth (amber), commitment feed (amber), mobile path (amber), live proof/deploy (red).
+- **Committed core:** one zero-cost guest completes the app-funded Testnet loop, refreshes, and sees the same result; then prove five wallets and the room envelope.
+- **Expected cycles:** contract kernel (green), raw transaction adapter (green), guest auth (green), commitment feed (green), mobile path (green), one-player live proof/deploy (green).
 - **Feasibility probes:** one wallet first; five only after it passes; roughly fifteen only after five pass.
 - **Ranked expansion:** projector comprehension polish, PWA shell, then at most one same-kernel refinement.
 - **Admission gate:** no expansion until the red-gate ledger entries are Verified.
@@ -37,7 +37,7 @@ After the demo, a voter should say:
 
 ## Canonical journey
 
-Given a zero-balance Privy guest wallet and app sponsorship, when the player commits a goal, submits rapid individually signed sponsored taps, automatically reveals, and the round is settled, then the same finalized score and evidence reappear after refresh.
+Given a Privy guest session, when the player commits a goal, receives an app-funded temporary game wallet, submits rapid individually signed raw taps, automatically reveals, and the round is settled, then the same finalized score and evidence reappear after refresh.
 
 It must not silently batch physical taps, count speculative or late taps, reveal goals before settlement, route each transaction randomly, or claim to benchmark Monad's maximum throughput.
 
@@ -58,8 +58,8 @@ Measured application results and documented protocol capacity are labeled separa
 - Score: `taps * min(goal,taps) / max(goal,taps)` using scaled integer accuracy.
 - Ties: score, accuracy, finalized taps, earlier final qualifying tap, then address only as a deterministic final fallback.
 - Permissionless `settleRound` after a short reveal window.
-- Privy guest wallet with app-sponsored `joinRound`, every `tap`, `revealGoal`, and settlement transaction. The participant holds no MON and never pays gas or transfers value.
-- Tight transaction policy restricted to chain `10143`, the TAPACITY contract, zero value, approved methods, and bounded sponsorship spend.
+- Privy guest session with app-sponsored `joinRound` and `revealGoal`; the round treasury funds a device-local game wallet for direct raw `tap` transactions. The participant supplies no MON and never pays.
+- Tight transaction policy restricted to chain `10143`, the TAPACITY contract, zero-value calls, explicit nonces, and a 90,000 gas limit per tap.
 - Honest attempted/submitted/proposed/voted/finalized/late/failed telemetry. Sponsorship rejection or rate limiting is shown as failure and never falls back to participant-paid gas.
 - `monadLogs`/`monadNewHeads` commitment handling with speculative proposals clearly marked.
 - Bounded contract reads/log replay plus same-device session recovery; no application database.
@@ -87,11 +87,11 @@ Measured application results and documented protocol capacity are labeled separa
 
 ### Critical seam check
 
-- One integration test exercises the sponsored-send adapter and classifies emitted logs without duplicate logical submissions or invented success.
+- One integration seam exercises local signing, explicit nonce allocation, exact raw-byte RPC retry, and commitment classification without duplicate logical submissions or invented success.
 
 ### Deployed red gate
 
-- One real zero-balance guest: sponsored join/commit -> 20-second sponsored tap burst -> commitment feed -> sponsored automatic reveal -> finalized score -> refresh reconstruction.
+- One real zero-cost guest: sponsored join/commit -> treasury funding -> 20-second direct raw tap burst -> commitment feed -> automatic reveal -> finalized score -> refresh reconstruction.
 - Record signing latency, attempted/submitted/accepted/finalized/late/failed, nonce gaps, 429s, p50/p95 tap-to-finality, and sustainable per-wallet rate.
 - Repeat with five wallets, then the intended room envelope on venue Wi-Fi.
 
@@ -105,21 +105,21 @@ Measured application results and documented protocol capacity are labeled separa
 | Capability | State | Evidence |
 |---|---|---|
 | Product/demo contract | Specified | This document |
-| Contract kernel | Verified | Three focused Foundry tests pass; production build succeeds |
-| Sponsored transaction submission | Verified | Three critical-seam checks pass, including no paid retry and commitment progression |
-| Commitment-state feed | Implemented | `monadLogs` replay/live tracking plus `monadNewHeads` supersession; live endpoint payload probed, app E2E pending |
-| Privy zero-balance guest | Implemented | Guest and sponsored-call code compiles; real app credentials absent |
-| Refresh reconstruction | Implemented | Finalized reads, bounded logs, and same-device commitment restore compile; live refresh proof pending |
-| One-player Testnet loop | Implemented | Browser path and honest configuration state compile; real sponsored loop pending credentials/deployment |
+| Contract kernel | Verified | Four focused Foundry tests pass, including treasury funding and controller-authorized reveal |
+| Raw tap submission | Verified | Six web checks pass; exact signed bytes retry across sticky RPCs without participant-paid fallback |
+| Commitment-state feed | Verified | Production run showed proposed/voted/finalized progression and canonical finalized scoring |
+| Privy zero-cost guest | Verified | Production guest joined with no wallet extension or participant funds |
+| Refresh reconstruction | Implemented | Finalized reads, bounded logs, and same-device commitment restore compile; explicit refresh rehearsal remains |
+| One-player Testnet loop | Verified | Round 3: 31 attempted/submitted, 15 finalized in-window, automatic reveal, settlement, and Chainprint |
 | Five-wallet load probe | Specified | Admitted only after one-player pass |
 | Room-envelope probe | Specified | Admitted only after five-wallet pass |
-| Vercel deployment | Specified | Intended public environment |
-| Three-minute demo | Specified | Exact reveal sequence and fallback above |
+| Host room control | Verified | Production `/host` created round 3, showed joined count, and started a synchronized 2.4-second observed countdown |
+| Vercel deployment | Deployed | `https://web-alpha-six-19.vercel.app` on contract `0xbf190f2f02C0661F4e21A869C7b7B5548cC069E6` |
+| Three-minute demo | Implemented | Player loop works; projector leaderboard and whole-round insight view remain |
 
 ## Open assumptions
 
 - The presentation slot must be added as soon as it is known; freeze remains T-60 minutes minimum.
-- Privy guest accounts and app-pays sponsorship must be enabled in the dashboard, and a project app ID/credentials are not present locally yet.
-- Native sponsorship uses Privy's EIP-7702/paymaster path. It is intentionally not described as direct public-RPC raw-byte broadcast.
-- Privy's client-sponsored transaction rate limit and venue network behavior are unknown until the live probes measure them.
-- If sponsored throughput is below physical tapping speed, TAPACITY preserves one-transaction-per-submitted-tap semantics and reports attempted versus submitted honestly; it never charges the participant.
+- Privy guest accounts and app-pays sponsorship are enabled for the deployed origins; Privy is not in the rapid tap path.
+- Public read calls are batched and tab-sticky across QuickNode, Ankr, and Monad Foundation. Venue network behavior still requires the five-wallet and room probes.
+- The live raw path preserves one-transaction-per-submitted-tap semantics and reports attempted, submitted, finalized, late, and failed separately; it never charges the participant.
