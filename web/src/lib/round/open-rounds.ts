@@ -29,12 +29,18 @@ export async function loadOpenRounds(contract: `0x${string}`) {
     blockTag: "finalized",
   });
   const ids = recentRoundIds(roundCount);
-  const states = await Promise.all(ids.map((id) => publicClient.readContract({
-    address: contract,
-    abi: tapacityAbi,
-    functionName: "getRound",
-    args: [id],
+  const states = await publicClient.multicall({
+    allowFailure: false,
     blockTag: "finalized",
+    contracts: ids.map((id) => ({
+      address: contract,
+      abi: tapacityAbi,
+      functionName: "getRound" as const,
+      args: [id] as const,
+    })),
+  });
+  return selectOpenRounds(ids.map((id, index) => ({
+    id,
+    state: states[index] as unknown as RoundState,
   })));
-  return selectOpenRounds(ids.map((id, index) => ({ id, state: states[index] as RoundState })));
 }
