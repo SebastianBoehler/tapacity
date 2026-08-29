@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useChainState } from "@/lib/contract/use-chain-state";
 import { currentPhase } from "@/components/player/round-phase";
 import { HostResults } from "./host-results";
+import { HostJoin } from "./host-join";
 
-export function HostConsole({ contract }: { contract: `0x${string}` }) {
+export function HostConsole({ contract, origin }: { contract: `0x${string}`; origin: string }) {
   const [hostKey, setHostKey] = useState(() => readStored("tapacity:host-key", true));
   const [roundInput, setRoundInput] = useState(() => readStored("tapacity:host-round"));
   const [roundId, setRoundId] = useState<bigint | undefined>(() => {
@@ -72,7 +73,7 @@ export function HostConsole({ contract }: { contract: `0x${string}` }) {
           </div>
         </details>
       </div>}
-      {roundId && <HostRound contract={contract} roundId={roundId} busy={busy} action={action} onPresenting={setPresenting} onNewRound={newRound} />}
+      {roundId && <HostRound contract={contract} origin={origin} roundId={roundId} busy={busy} action={action} onPresenting={setPresenting} onNewRound={newRound} />}
       {error && <p className="error-note" role="alert">{error}</p>}
     </main>
   );
@@ -80,6 +81,7 @@ export function HostConsole({ contract }: { contract: `0x${string}` }) {
 
 function HostRound({
   contract,
+  origin,
   roundId,
   busy,
   action,
@@ -87,6 +89,7 @@ function HostRound({
   onNewRound,
 }: {
   contract: `0x${string}`;
+  origin: string;
   roundId: bigint;
   busy: boolean;
   action: (name: "create" | "start" | "settle", target?: bigint) => Promise<void>;
@@ -100,13 +103,11 @@ function HostRound({
   if (round.creator === "0x0000000000000000000000000000000000000000") return <p className="error-note" role="alert">Round {roundId.toString()} does not exist on this contract.</p>;
   if (round.settled) return <HostResults contract={contract} roundId={roundId} round={round} ranking={ranking} onNewRound={onNewRound} />;
   const phase = currentPhase(blockNumber, round);
-  const joinPath = `/?round=${roundId}`;
   return (
     <section className="host-round">
       <div className="host-room-head"><h2>Round {roundId.toString()}</h2><strong>{label(phase)}</strong></div>
       <div className="host-metrics"><HostMetric label="Joined" value={round.playerCount.toString()} /><HostMetric label="Capacity" value={round.maxPlayers.toString()} /><HostMetric label="Tap gas" value="Sponsored" /></div>
-      <label htmlFor="join-url">Join link<input id="join-url" readOnly value={joinPath} /></label>
-      <button className="secondary-button host-secondary" onClick={() => void navigator.clipboard.writeText(new URL(joinPath, window.location.origin).toString())}>Copy join link</button>
+      <HostJoin origin={origin} roundId={roundId} />
       {phase === "waiting" && <button className="primary-button" disabled={busy || round.playerCount === 0} onClick={() => void action("start", roundId)}>Start shared countdown</button>}
       {phase === "lobby" && <p className="host-countdown">{secondsUntil(round.startBlock, blockNumber)}s</p>}
       {phase === "live" && <p className="host-countdown">{secondsUntil(round.endBlock, blockNumber)}s</p>}
