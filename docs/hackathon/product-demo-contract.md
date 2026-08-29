@@ -119,7 +119,7 @@ Measured application results and documented protocol capacity are labeled separa
 | Public room discovery | Verified | Local browser check exposed only the newest round when joinable and hid older abandoned lobbies; production deployment remains |
 | Vercel deployment | Deployed | `web-alpha-six-19.vercel.app` serves the verified contract and keyless host revision |
 | Submission README | Verified | Judge-facing README links the live player, host, verified contract, Round 10 replay/proof, and a real onchain projector screenshot |
-| GitHub CI | Implemented | Web tests/lint/build and focused Foundry tests pass locally; hosted workflow verification follows the push |
+| GitHub CI | Verified | Web tests/lint/build and focused Foundry tests pass locally and in GitHub Actions run `33255018149` |
 | Player tap proof ledger | Implemented | Chainprint classifies every physical tap as finalized, submitted, late, failed, or not submitted and links each available outer transaction |
 | Round onchain proof ledger | Verified | Local round 10 replay reconstructed all 66 canonical `TapRecorded` operations across 26 outer transactions using transaction hash plus log index |
 | Player countdown and settlement UX | Implemented | Shared countdown renders in the phone pressure zone; only the host exposes settlement while phones wait for settled state |
