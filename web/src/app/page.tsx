@@ -1,5 +1,6 @@
 import { isAddress } from "viem";
 import { TapacityApp } from "@/components/tapacity-app";
+import { RoomPicker } from "@/components/player/room-picker";
 
 export default async function Page({
   searchParams,
@@ -19,7 +20,6 @@ export default async function Page({
     (!contract || !isAddress(contract)) && "NEXT_PUBLIC_TAPACITY_CONTRACT",
     !alchemyApiKey && "NEXT_PUBLIC_ALCHEMY_API_KEY",
     !alchemyPolicyId && "NEXT_PUBLIC_ALCHEMY_POLICY_ID",
-    !roundId && "?round=<roundId>",
   ].filter(Boolean) as string[];
 
   if (missing.length > 0) {
@@ -34,6 +34,7 @@ export default async function Page({
     );
   }
 
-  if (!appId || !clientId || !contract || !isAddress(contract) || !alchemyApiKey || !alchemyPolicyId || roundId === undefined) return null;
+  if (!appId || !clientId || !contract || !isAddress(contract) || !alchemyApiKey || !alchemyPolicyId) return null;
+  if (roundId === undefined) return <RoomPicker contract={contract} />;
   return <TapacityApp appId={appId} clientId={clientId} contract={contract} roundId={roundId} alchemyApiKey={alchemyApiKey} alchemyPolicyId={alchemyPolicyId} />;
 }

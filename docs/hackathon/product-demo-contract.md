@@ -64,6 +64,7 @@ Measured application results and documented protocol capacity are labeled separa
 - `monadLogs`/`monadNewHeads` commitment handling with speculative proposals clearly marked.
 - Bounded contract reads/log replay plus same-device session recovery; no application database.
 - Mobile play path and projector reveal path sufficient for the three-minute demo.
+- Public `/` discovery of the newest bounded set of joinable onchain lobbies; QR links may still open a round directly.
 
 ### Must not build
 
@@ -114,6 +115,7 @@ Measured application results and documented protocol capacity are labeled separa
 | Five-wallet load probe | Specified | Admitted only after one-player pass |
 | Room-envelope probe | Specified | Admitted only after five-wallet pass |
 | Host room control | Deployed | Production `/host` created onchain round 4 without a credential and showed its QR, full join URL, live count, and start control |
+| Public room discovery | Implemented | `/` reads the newest 24 finalized rounds and lists only not-started lobbies with remaining capacity; production verification pending |
 | Vercel deployment | Deployed | `web-alpha-six-19.vercel.app` serves the verified contract and keyless host revision |
 | Three-minute demo | Implemented | Player loop and responsive projector analytics exist; multi-browser rehearsal remains |
 
