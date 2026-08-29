@@ -18,8 +18,9 @@ Every step is one bounded AI cycle: specify -> edit -> run the named check -> in
 
 ## 2. Sponsored transaction seam (committed core)
 
-- A narrow adapter invokes Privy's send path with sponsorship enabled for every player transaction and never retries through participant-paid gas.
-- Restrict sponsorship to chain `10143`, zero value, the deployed TAPACITY contract, approved calldata, and a bounded spend policy.
+- A narrow adapter invokes Alchemy Wallet APIs with sponsorship enabled for every tap operation and never retries through participant-paid gas.
+- Resolve a counterfactual smart account from the device-local owner key and use a distinct nonzero nonce key per physical tap for parallel submission.
+- Restrict sponsorship to chain `10143`, zero value, the deployed TAPACITY contract, approved calldata, and a bounded policy.
 - Separate sponsored submission from read/commitment WebSocket traffic and classify provider/rate-limit failures without inventing success.
 - **Check:** one integration test with controlled sponsored-send responses and canonical emitted logs.
 

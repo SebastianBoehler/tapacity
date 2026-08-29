@@ -37,7 +37,7 @@ Scope: entry, configuration, guest join, private goal setup, live player screen,
 
 ## UI behavior
 
-- Attempted increments locally on input; Submitted changes only after Privy returns a hash; Proposed/Voted/Finalized come from Monad commitment data.
+- Attempted increments locally on input; Submitted changes only after the sponsored operation yields an onchain receipt; Proposed/Voted/Finalized come from Monad commitment data.
 - Superseded speculative proposal logs are removed when a competing Voted/Finalized head wins.
 - Refresh combines finalized contract reads, bounded round logs, and the same-device goal/attempt record.
 - Chainprint derives late/failed outcomes from receipts and canonical hashes; unavailable observed-finality data renders as `—`.

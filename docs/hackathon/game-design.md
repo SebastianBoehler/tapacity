@@ -31,7 +31,7 @@ You are an execution lane inside a live Monad round. Your pressure becomes indiv
 
 ## State model
 
-Input is local and immediate; submission is Privy-sponsored; proposed/voted/finalized are Monad commitment states; settlement is deterministic contract state. UI animation may react to speculative state, but score and Chainprint use finalized canonical state.
+Input is local and immediate; tap submission is Alchemy-sponsored while join/reveal use the Privy controller; proposed/voted/finalized are Monad commitment states; settlement is deterministic contract state. UI animation may react to speculative state, but score and Chainprint use finalized canonical state.
 
 ## Rendering and feedback
 
