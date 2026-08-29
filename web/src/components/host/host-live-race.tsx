@@ -20,7 +20,7 @@ export function HostLiveRace({
 }) {
   const { connection, lanes } = useLiveRace({ contract, roundId, startBlock, endBlock });
   const maxTaps = Math.max(1, ...lanes.map((lane) => lane.taps));
-  const dense = lanes.length > 16;
+  const density = raceDensity(lanes.length);
 
   return (
     <section className="live-race" aria-labelledby="live-race-title">
@@ -35,7 +35,7 @@ export function HostLiveRace({
         <p className="live-race-empty" role="status">Reconstructing {expectedPlayers} player lane{expectedPlayers === 1 ? "" : "s"}…</p>
       )}
       {lanes.length > 0 && (
-        <ol className={dense ? "live-race-lanes is-dense" : "live-race-lanes"}>
+        <ol className={`live-race-lanes ${density}`}>
           {lanes.map((lane) => {
             const width = lane.taps === 0 ? 0 : Math.max(3, lane.taps / maxTaps * 100);
             const style = {
@@ -45,8 +45,10 @@ export function HostLiveRace({
             return (
               <li key={lane.address} style={style}>
                 <strong className="live-race-rank">#{lane.rank}</strong>
-                <span className="live-race-name"><i aria-hidden="true" />{lane.name}</span>
-                <span className="live-race-track" aria-hidden="true"><i /></span>
+                <span className="live-race-track" aria-label={`${lane.name}: ${lane.taps} taps`}>
+                  <i aria-hidden="true" />
+                  <span className="live-race-track-name">{lane.name}</span>
+                </span>
                 <strong className="live-race-taps">{lane.taps}</strong>
               </li>
             );
@@ -55,6 +57,13 @@ export function HostLiveRace({
       )}
     </section>
   );
+}
+
+function raceDensity(playerCount: number) {
+  if (playerCount <= 4) return "is-sparse";
+  if (playerCount <= 8) return "is-roomy";
+  if (playerCount > 16) return "is-dense";
+  return "is-standard";
 }
 
 function raceStatus(phase: string, connection: string) {
