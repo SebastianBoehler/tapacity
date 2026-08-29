@@ -33,7 +33,7 @@ export function HostResults({
         <h1>Round {roundId.toString()}</h1>
         <div className="results-actions">
           <Link className="secondary-button results-proof-link" href={`/host/proof?round=${roundId.toString()}`}>Onchain proof</Link>
-          <button className="secondary-button results-new-round" onClick={onNewRound}>Start new round</button>
+          <button className="secondary-button results-new-round" onClick={onNewRound}>All rounds</button>
         </div>
       </div>
 

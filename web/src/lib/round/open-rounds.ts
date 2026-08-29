@@ -13,12 +13,14 @@ export function recentRoundIds(roundCount: bigint, limit = DISCOVERY_LIMIT) {
 }
 
 export function selectOpenRounds(rounds: OpenRound[]) {
-  return rounds.filter(({ state }) => (
-    state.creator !== ZERO_ADDRESS
-    && state.startBlock === 0n
-    && !state.settled
-    && state.playerCount < state.maxPlayers
-  ));
+  const latest = rounds[0];
+  if (!latest) return [];
+  return latest.state.creator !== ZERO_ADDRESS
+    && latest.state.startBlock === 0n
+    && !latest.state.settled
+    && latest.state.playerCount < latest.state.maxPlayers
+    ? [latest]
+    : [];
 }
 
 export async function loadOpenRounds(contract: `0x${string}`) {

@@ -5,16 +5,29 @@ import { useChainState } from "@/lib/contract/use-chain-state";
 import { currentPhase } from "@/components/player/round-phase";
 import { HostResults } from "./host-results";
 import { HostJoin } from "./host-join";
+import { HostRoundArchive } from "./host-round-archive";
 
-export function HostConsole({ contract, origin }: { contract: `0x${string}`; origin: string }) {
-  const [roundInput, setRoundInput] = useState("");
-  const [roundId, setRoundId] = useState<bigint>();
+export function HostConsole({
+  contract,
+  origin,
+  initialRoundId,
+}: {
+  contract: `0x${string}`;
+  origin: string;
+  initialRoundId?: string;
+}) {
+  const [roundInput, setRoundInput] = useState(initialRoundId ?? "");
+  const [roundId, setRoundId] = useState<bigint | undefined>(() => initialRoundId ? BigInt(initialRoundId) : undefined);
   const [capacity, setCapacity] = useState(20);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [presenting, setPresenting] = useState(false);
 
   useEffect(() => {
+    if (initialRoundId) {
+      localStorage.setItem("tapacity:host-round", initialRoundId);
+      return;
+    }
     const saved = localStorage.getItem("tapacity:host-round") ?? "";
     let active = true;
     queueMicrotask(() => {
@@ -23,7 +36,16 @@ export function HostConsole({ contract, origin }: { contract: `0x${string}`; ori
       if (/^\d+$/.test(saved)) setRoundId(BigInt(saved));
     });
     return () => { active = false; };
-  }, []);
+  }, [initialRoundId]);
+
+  const rememberRound = (nextRound: bigint) => {
+    const value = nextRound.toString();
+    setPresenting(false);
+    setRoundId(nextRound);
+    setRoundInput(value);
+    localStorage.setItem("tapacity:host-round", value);
+    history.replaceState(null, "", `/host?round=${value}`);
+  };
 
   const action = async (name: "create" | "start" | "settle", target?: bigint) => {
     setBusy(true);
@@ -37,10 +59,7 @@ export function HostConsole({ contract, origin }: { contract: `0x${string}`; ori
       const result = await response.json() as { error?: string; roundId?: string };
       if (!response.ok || !result.roundId) throw new Error(result.error ?? "Host action failed");
       const nextRound = BigInt(result.roundId);
-      if (name === "create") setPresenting(false);
-      setRoundId(nextRound);
-      setRoundInput(result.roundId);
-      localStorage.setItem("tapacity:host-round", result.roundId);
+      rememberRound(nextRound);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Host action failed");
     } finally {
@@ -53,14 +72,12 @@ export function HostConsole({ contract, origin }: { contract: `0x${string}`; ori
     setRoundInput("");
     setPresenting(false);
     localStorage.removeItem("tapacity:host-round");
+    history.replaceState(null, "", "/host");
   };
 
   const openExistingRound = () => {
     if (!/^\d+$/.test(roundInput)) return;
-    const nextRound = BigInt(roundInput);
-    setPresenting(false);
-    setRoundId(nextRound);
-    localStorage.setItem("tapacity:host-round", roundInput);
+    rememberRound(BigInt(roundInput));
   };
 
   return (
@@ -79,6 +96,7 @@ export function HostConsole({ contract, origin }: { contract: `0x${string}`; ori
         </details>
       </div>}
       {roundId && <HostRound contract={contract} origin={origin} roundId={roundId} busy={busy} action={action} onPresenting={setPresenting} onNewRound={newRound} />}
+      {!roundId && <HostRoundArchive contract={contract} onOpen={rememberRound} />}
       {error && <p className="error-note" role="alert">{error}</p>}
     </main>
   );
