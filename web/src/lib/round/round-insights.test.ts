@@ -34,6 +34,7 @@ describe("summarizeRound", () => {
     expect(summary.operationsPerTransaction).toBeCloseTo(1.333, 3);
     expect(summary.goalRealizationPercent).toBe(40);
     expect(summary.equivalentRooms).toBe(4_000);
+    expect(summary.capacitySharePercent).toBeCloseTo(0.025, 4);
   });
 
   it("does not invent ratios when no transactions were observed", () => {

@@ -1,5 +1,6 @@
 export const MONAD_DOCUMENTED_TPS = 10_000;
 export const MONAD_BLOCK_SECONDS = 0.4;
+export const MONAD_DOCUMENTED_FINALITY_MS = 800;
 const PEAK_WINDOW_BLOCKS = 3;
 
 export type AcceptedTap = {
@@ -24,6 +25,7 @@ export type RoundSummary = {
   operationsPerTransaction?: number;
   goalRealizationPercent?: number;
   equivalentRooms?: number;
+  capacitySharePercent: number;
 };
 
 export function summarizeRound({
@@ -67,5 +69,6 @@ export function summarizeRound({
     operationsPerTransaction: tapacityTransactions > 0 ? finalizedTaps / tapacityTransactions : undefined,
     goalRealizationPercent: totalGoal > 0 ? finalizedTaps / totalGoal * 100 : undefined,
     equivalentRooms: peakAppTps > 0 ? Math.floor(MONAD_DOCUMENTED_TPS / peakAppTps) : undefined,
+    capacitySharePercent: peakAppTps / MONAD_DOCUMENTED_TPS * 100,
   };
 }
