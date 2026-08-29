@@ -115,8 +115,9 @@ Measured application results and documented protocol capacity are labeled separa
 | Five-wallet load probe | Specified | Admitted only after one-player pass |
 | Room-envelope probe | Specified | Admitted only after five-wallet pass |
 | Host room control | Deployed | Production `/host` created onchain round 4 without a credential and showed its QR, full join URL, live count, and start control |
-| Public room discovery | Implemented | `/` reads the newest 24 finalized rounds and lists only not-started lobbies with remaining capacity; production verification pending |
+| Public room discovery | Deployed | Production `/` discovered open round 4 from finalized state and opened its guest flow without manual URL editing |
 | Vercel deployment | Deployed | `web-alpha-six-19.vercel.app` serves the verified contract and keyless host revision |
+| Projector result telemetry | Deployed | Production round 5 fit exactly in a 1280x720 viewport with no horizontal or vertical scroll |
 | Three-minute demo | Implemented | Player loop and responsive projector analytics exist; multi-browser rehearsal remains |
 
 ## Open assumptions
