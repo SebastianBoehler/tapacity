@@ -17,14 +17,25 @@ import {
 } from "@/lib/session/goal-session";
 import { useFinalityPersistence } from "@/lib/session/use-finality-persistence";
 import { retryRateLimited } from "@/lib/transactions/retry-rate-limit";
-import { useRawTapSubmitter } from "@/lib/transactions/use-raw-tap-submitter";
+import { sponsoredAccountAddress } from "@/lib/transactions/alchemy-smart-account";
+import { useSponsoredTapSubmitter } from "@/lib/transactions/use-sponsored-tap-submitter";
 import { useTapOutcomes } from "@/lib/transactions/use-tap-outcomes";
 import { Chainprint } from "./chainprint";
 import { Header, Metric, StatusScreen } from "./player-ui";
 import { currentPhase, phaseLabel } from "./round-phase";
 import { TransactionTrack } from "./transaction-track";
 
-export function PlayerGame({ contract, roundId }: { contract: `0x${string}`; roundId: bigint }) {
+export function PlayerGame({
+  alchemyApiKey,
+  alchemyPolicyId,
+  contract,
+  roundId,
+}: {
+  alchemyApiKey: string;
+  alchemyPolicyId: string;
+  contract: `0x${string}`;
+  roundId: bigint;
+}) {
   const { ready, authenticated } = usePrivy();
   const { createGuestAccount } = useGuestAccounts();
   const { wallets } = useWallets();
@@ -36,7 +47,7 @@ export function PlayerGame({ contract, roundId }: { contract: `0x${string}`; rou
     return (
       <main className="entry-screen">
         <h1>TAPACITY</h1>
-        <p className="lead">Round {roundId.toString()} on Monad Testnet. Predict your output, then turn every accepted tap into a direct transaction.</p>
+        <p className="lead">Round {roundId.toString()} on Monad Testnet. Predict your output, then turn every accepted tap into a sponsored onchain operation.</p>
         <button
           className="primary-button"
           onClick={() => void createGuestAccount().catch((cause) => setError(message(cause)))}
@@ -50,17 +61,21 @@ export function PlayerGame({ contract, roundId }: { contract: `0x${string}`; rou
   }
   if (!wallet) return <StatusScreen label="Creating embedded wallet" />;
 
-  return <ConnectedGame contract={contract} roundId={roundId} address={wallet.address as `0x${string}`} />;
+  return <ConnectedGame contract={contract} roundId={roundId} address={wallet.address as `0x${string}`} alchemyApiKey={alchemyApiKey} alchemyPolicyId={alchemyPolicyId} />;
 }
 
 function ConnectedGame({
   contract,
   roundId,
   address,
+  alchemyApiKey,
+  alchemyPolicyId,
 }: {
   contract: `0x${string}`;
   roundId: bigint;
   address: `0x${string}`;
+  alchemyApiKey: string;
+  alchemyPolicyId: string;
 }) {
   const key = useMemo(() => sessionKey(contract, roundId, address), [address, contract, roundId]);
   const [session, setSession] = useState<GoalSession | null>(() => loadGoalSession(key));
@@ -85,6 +100,8 @@ function ConnectedGame({
       round={chain.round}
       player={chain.playerState}
       ranking={chain.ranking}
+      alchemyApiKey={alchemyApiKey}
+      alchemyPolicyId={alchemyPolicyId}
     />
   );
 }
@@ -101,6 +118,8 @@ function RoundGame({
   round,
   player,
   ranking,
+  alchemyApiKey,
+  alchemyPolicyId,
 }: {
   contract: `0x${string}`;
   roundId: bigint;
@@ -113,6 +132,8 @@ function RoundGame({
   round: RoundState;
   player?: PlayerState;
   ranking: readonly `0x${string}`[];
+  alchemyApiKey: string;
+  alchemyPolicyId: string;
 }) {
   const { sendTransaction } = useSendTransaction();
   const [goal, setGoal] = useState(50);
@@ -145,7 +166,7 @@ function RoundGame({
 
   useFinalityPersistence(feed.finalizedTransactions, persist);
   const outcomes = useTapOutcomes(session?.hashes ?? [], feed.finalizedTransactions, round.endBlock, round.settled);
-  const submitter = useRawTapSubmitter(contract, session);
+  const submitter = useSponsoredTapSubmitter({ apiKey: alchemyApiKey, contract, policyId: alchemyPolicyId, session });
 
   useEffect(() => {
     if (phase !== "live") submitter?.cancelPending("Tap window closed before submission");
@@ -164,8 +185,16 @@ function RoundGame({
     if (round.startBlock !== 0n) return;
     setBusy(true);
     setError(undefined);
-    const next = session ?? createGoalSession(goal, nickname.trim());
+    const draft = session ?? createGoalSession(goal, nickname.trim());
     try {
+      const tapperAddress = await sponsoredAccountAddress({
+        apiKey: alchemyApiKey,
+        policyId: alchemyPolicyId,
+        privateKey: draft.tapPrivateKey,
+      });
+      const next = { ...draft, tapperAddress };
+      saveGoalSession(storageKey, next);
+      setSession(next);
       const { hash } = await sponsor(
         encodeFunctionData({
           abi: tapacityAbi,
@@ -299,7 +328,7 @@ function RoundGame({
         onKeyDown={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); tap(); } }}
       >
         <span>{phase === "live" ? "Tap" : phase === "waiting" ? "Waiting" : phase === "lobby" ? "Armed" : "Locked"}</span>
-        <small>One accepted tap · one direct Monad transaction</small>
+        <small>One accepted tap · one sponsored onchain call</small>
       </button>
     </main>
   );

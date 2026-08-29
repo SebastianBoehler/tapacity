@@ -12,7 +12,6 @@ export type RoundState = {
   revealEndBlock: bigint;
   durationBlocks: number;
   revealBlocks: number;
-  tapGrantWei: bigint;
   maxPlayers: number;
   playerCount: number;
   totalTaps: bigint;

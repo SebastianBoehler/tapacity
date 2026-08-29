@@ -9,11 +9,15 @@ export function TapacityApp({
   clientId,
   contract,
   roundId,
+  alchemyApiKey,
+  alchemyPolicyId,
 }: {
   appId: string;
   clientId: string;
   contract: `0x${string}`;
   roundId: bigint;
+  alchemyApiKey: string;
+  alchemyPolicyId: string;
 }) {
   return (
     <PrivyProvider
@@ -29,7 +33,7 @@ export function TapacityApp({
         appearance: { theme: "dark", accentColor: "#836ef9" },
       }}
     >
-      <PlayerGame contract={contract} roundId={roundId} />
+      <PlayerGame contract={contract} roundId={roundId} alchemyApiKey={alchemyApiKey} alchemyPolicyId={alchemyPolicyId} />
     </PrivyProvider>
   );
 }

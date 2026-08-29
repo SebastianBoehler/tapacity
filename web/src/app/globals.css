@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "./game.css";
+@import "./host-results.css";
+@import "./host-controls.css";
 
 :root {
   --carbon-950: oklch(0.105 0.012 285);

@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "probe:sponsored": "node scripts/probe-sponsored-round.mjs",
     "test": "vitest run"
   },
   "dependencies": {
+    "@alchemy/wallet-apis": "^5.2.0",
     "@privy-io/react-auth": "^3.38.0",
     "next": "16.3.3",
     "react": "19.2.8",

@@ -1,0 +1,49 @@
+.host-controls > label,
+.host-round > label,
+.existing-round label {
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.host-create-button,
+.existing-round {
+  grid-column: 1 / -1;
+}
+
+.host-create-button {
+  margin: 0;
+}
+
+.existing-round {
+  padding-block-start: 0.25rem;
+  border-top: 1px solid oklch(1 0 0 / 0.08);
+}
+
+.existing-round summary {
+  width: fit-content;
+  padding-block: 0.75rem;
+  color: var(--cyan);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.existing-round > p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.existing-round > div {
+  display: grid;
+  gap: 1rem;
+  margin-block-start: 1rem;
+}
+
+@media (min-width: 48rem) {
+  .existing-round > div {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+}

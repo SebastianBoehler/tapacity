@@ -19,20 +19,13 @@ contract Tapacity {
     error AlreadySettled();
     error OnlyRoundCreator();
     error RoundAlreadyStarted();
-    error InvalidFunding();
-    error FundingTransferFailed();
+    error InvalidPlayer();
     error NotPlayerController();
 
     event RoundCreated(
-        uint256 indexed roundId,
-        address indexed creator,
-        uint32 durationBlocks,
-        uint32 revealBlocks,
-        uint16 maxPlayers,
-        uint96 tapGrantWei
+        uint256 indexed roundId, address indexed creator, uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers
     );
     event RoundStarted(uint256 indexed roundId, uint64 startBlock, uint64 endBlock, uint64 revealEndBlock);
-    event PlayerFunded(uint256 indexed roundId, address indexed player, uint96 amount);
     event GoalCommitted(uint256 indexed roundId, address indexed player, bytes32 commitment, bytes16 nickname);
     event TapRecorded(uint256 indexed roundId, address indexed player, uint32 tapNumber);
     event GoalRevealed(uint256 indexed roundId, address indexed player, uint32 goal);
@@ -55,7 +48,6 @@ contract Tapacity {
         uint64 revealEndBlock;
         uint32 durationBlocks;
         uint32 revealBlocks;
-        uint96 tapGrantWei;
         uint16 maxPlayers;
         uint16 playerCount;
         uint64 totalTaps;
@@ -81,12 +73,11 @@ contract Tapacity {
     mapping(uint256 roundId => address[] players) private participantAddresses;
     mapping(uint256 roundId => address[] players) private rankings;
 
-    function createRound(uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers, uint96 tapGrantWei)
+    function createRound(uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers)
         external
         returns (uint256 roundId)
     {
-        if (durationBlocks == 0 || revealBlocks == 0 || maxPlayers == 0 || maxPlayers > MAX_PLAYERS || tapGrantWei == 0)
-        {
+        if (durationBlocks == 0 || revealBlocks == 0 || maxPlayers == 0 || maxPlayers > MAX_PLAYERS) {
             revert InvalidSchedule();
         }
 
@@ -98,16 +89,15 @@ contract Tapacity {
             revealEndBlock: 0,
             durationBlocks: durationBlocks,
             revealBlocks: revealBlocks,
-            tapGrantWei: tapGrantWei,
             maxPlayers: maxPlayers,
             playerCount: 0,
             totalTaps: 0,
             settled: false
         });
-        emit RoundCreated(roundId, msg.sender, durationBlocks, revealBlocks, maxPlayers, tapGrantWei);
+        emit RoundCreated(roundId, msg.sender, durationBlocks, revealBlocks, maxPlayers);
     }
 
-    function startRound(uint256 roundId, uint32 leadBlocks) external payable {
+    function startRound(uint256 roundId, uint32 leadBlocks) external {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
         if (msg.sender != round.creator) revert OnlyRoundCreator();
@@ -115,17 +105,10 @@ contract Tapacity {
         if (leadBlocks == 0 || leadBlocks > MAX_START_LEAD_BLOCKS || round.playerCount == 0) {
             revert InvalidSchedule();
         }
-        if (msg.value != uint256(round.tapGrantWei) * round.playerCount) revert InvalidFunding();
 
         round.startBlock = uint64(block.number + leadBlocks);
         round.endBlock = round.startBlock + round.durationBlocks;
         round.revealEndBlock = round.endBlock + round.revealBlocks;
-        for (uint256 i; i < participantAddresses[roundId].length; ++i) {
-            address player = participantAddresses[roundId][i];
-            (bool funded,) = payable(player).call{value: round.tapGrantWei}("");
-            if (!funded) revert FundingTransferFailed();
-            emit PlayerFunded(roundId, player, round.tapGrantWei);
-        }
         emit RoundStarted(roundId, round.startBlock, round.endBlock, round.revealEndBlock);
     }
 
@@ -134,7 +117,7 @@ contract Tapacity {
         if (round.creator == address(0)) revert InvalidRound();
         if (round.startBlock != 0) revert JoinWindowClosed();
         if (round.playerCount >= round.maxPlayers) revert PlayerLimitReached();
-        if (tapper == address(0)) revert InvalidFunding();
+        if (tapper == address(0)) revert InvalidPlayer();
 
         Player storage player = players[roundId][tapper];
         if (player.joined) revert AlreadyJoined();

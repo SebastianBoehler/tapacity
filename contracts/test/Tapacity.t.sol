@@ -18,7 +18,7 @@ contract TapacityTest is Test {
     }
 
     function testTapOnlyInsideRoundWindow() external {
-        uint256 roundId = game.createRound(5, 3, 15, 1 ether);
+        uint256 roundId = game.createRound(5, 3, 15);
         bytes32 salt = keccak256("salt");
         bytes32 commitment = game.goalCommitment(roundId, player, 10, salt);
 
@@ -38,7 +38,7 @@ contract TapacityTest is Test {
     }
 
     function testRevealRequiresExactCommitmentInsideRevealWindow() external {
-        uint256 roundId = game.createRound(5, 3, 15, 1 ether);
+        uint256 roundId = game.createRound(5, 3, 15);
         bytes32 salt = keccak256("secret salt");
         bytes32 commitment = game.goalCommitment(roundId, player, 10, salt);
         address controller = makeAddr("controller");
@@ -62,7 +62,7 @@ contract TapacityTest is Test {
     }
 
     function testSettlementUsesDeterministicScoreAndTieOrder() external {
-        uint256 roundId = game.createRound(5, 3, 15, 1 ether);
+        uint256 roundId = game.createRound(5, 3, 15);
         _join(roundId, pulse, 8);
         _join(roundId, vector, 8);
         _join(roundId, apex, 18);
@@ -99,7 +99,7 @@ contract TapacityTest is Test {
     }
 
     function testLobbyStaysOpenUntilCreatorStartsAndThenFreezesRoster() external {
-        uint256 roundId = game.createRound(5, 3, 15, 1 ether);
+        uint256 roundId = game.createRound(5, 3, 15);
         _join(roundId, pulse, 8);
 
         Tapacity.Round memory lobby = game.getRound(roundId);
@@ -115,7 +115,7 @@ contract TapacityTest is Test {
         assertEq(started.startBlock, 105);
         assertEq(started.endBlock, 110);
         assertEq(started.revealEndBlock, 113);
-        assertEq(pulse.balance, 1 ether, "host funds the joined player at synchronized start");
+        assertEq(pulse.balance, 0, "sponsored taps do not require player funding");
 
         bytes32 salt = keccak256(abi.encode(vector));
         bytes32 commitment = game.goalCommitment(roundId, vector, 8, salt);
@@ -125,8 +125,7 @@ contract TapacityTest is Test {
     }
 
     function _start(uint256 roundId, uint32 leadBlocks) private {
-        Tapacity.Round memory round = game.getRound(roundId);
-        game.startRound{value: uint256(round.tapGrantWei) * round.playerCount}(roundId, leadBlocks);
+        game.startRound(roundId, leadBlocks);
     }
 
     function _join(uint256 roundId, address account, uint32 goal) private {

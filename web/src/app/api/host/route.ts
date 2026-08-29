@@ -1,4 +1,4 @@
-import { decodeEventLog, parseEther } from "viem";
+import { decodeEventLog } from "viem";
 import { NextResponse } from "next/server";
 import { adminConfig, HostError, requireHost } from "@/lib/admin/server";
 import { publicClient } from "@/lib/chain";
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         address: contract,
         abi: tapacityAbi,
         functionName: "createRound",
-        args: [50, 50, maxPlayers, parseEther("2")],
+        args: [50, 50, maxPlayers],
       });
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       for (const log of receipt.logs) {
@@ -56,7 +56,6 @@ export async function POST(request: Request) {
         abi: tapacityAbi,
         functionName: "startRound",
         args: [roundId, 15],
-        value: round.tapGrantWei * BigInt(round.playerCount),
       });
       await publicClient.waitForTransactionReceipt({ hash });
       return NextResponse.json({ hash, roundId: roundId.toString() });
