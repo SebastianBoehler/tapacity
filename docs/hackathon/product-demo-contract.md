@@ -117,7 +117,10 @@ Measured application results and documented protocol capacity are labeled separa
 | Host room control | Deployed | Production `/host` created onchain round 4 without a credential and showed its QR, full join URL, live count, and start control |
 | Public room discovery | Deployed | Production `/` discovered open round 4 from finalized state and opened its guest flow without manual URL editing |
 | Vercel deployment | Deployed | `web-alpha-six-19.vercel.app` serves the verified contract and keyless host revision |
-| Projector result telemetry | Deployed | Production round 5 fit exactly in a 1280x720 viewport with no horizontal or vertical scroll |
+| Player tap proof ledger | Implemented | Chainprint classifies every physical tap as finalized, submitted, late, failed, or not submitted and links each available outer transaction |
+| Round onchain proof ledger | Verified | Local round 10 replay reconstructed all 66 canonical `TapRecorded` operations across 26 outer transactions using transaction hash plus log index |
+| Player countdown and settlement UX | Implemented | Shared countdown renders in the phone pressure zone; only the host exposes settlement while phones wait for settled state |
+| Projector result telemetry | Verified | Round 10 podium/telemetry render fits exactly in a 1280x720 viewport with no horizontal or vertical scroll; measured values are cyan and documented capacity is violet |
 | Three-minute demo | Implemented | Player loop and responsive projector analytics exist; multi-browser rehearsal remains |
 
 ## Open assumptions
