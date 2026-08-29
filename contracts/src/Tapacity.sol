@@ -19,11 +19,20 @@ contract Tapacity {
     error AlreadySettled();
     error OnlyRoundCreator();
     error RoundAlreadyStarted();
+    error InvalidFunding();
+    error FundingTransferFailed();
+    error NotPlayerController();
 
     event RoundCreated(
-        uint256 indexed roundId, address indexed creator, uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers
+        uint256 indexed roundId,
+        address indexed creator,
+        uint32 durationBlocks,
+        uint32 revealBlocks,
+        uint16 maxPlayers,
+        uint96 tapGrantWei
     );
     event RoundStarted(uint256 indexed roundId, uint64 startBlock, uint64 endBlock, uint64 revealEndBlock);
+    event PlayerFunded(uint256 indexed roundId, address indexed player, uint96 amount);
     event GoalCommitted(uint256 indexed roundId, address indexed player, bytes32 commitment, bytes16 nickname);
     event TapRecorded(uint256 indexed roundId, address indexed player, uint32 tapNumber);
     event GoalRevealed(uint256 indexed roundId, address indexed player, uint32 goal);
@@ -46,6 +55,7 @@ contract Tapacity {
         uint64 revealEndBlock;
         uint32 durationBlocks;
         uint32 revealBlocks;
+        uint96 tapGrantWei;
         uint16 maxPlayers;
         uint16 playerCount;
         uint64 totalTaps;
@@ -62,6 +72,7 @@ contract Tapacity {
         uint64 lastTapBlock;
         bool joined;
         bool revealed;
+        address controller;
     }
 
     uint256 public roundCount;
@@ -70,11 +81,12 @@ contract Tapacity {
     mapping(uint256 roundId => address[] players) private participantAddresses;
     mapping(uint256 roundId => address[] players) private rankings;
 
-    function createRound(uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers)
+    function createRound(uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers, uint96 tapGrantWei)
         external
         returns (uint256 roundId)
     {
-        if (durationBlocks == 0 || revealBlocks == 0 || maxPlayers == 0 || maxPlayers > MAX_PLAYERS) {
+        if (durationBlocks == 0 || revealBlocks == 0 || maxPlayers == 0 || maxPlayers > MAX_PLAYERS || tapGrantWei == 0)
+        {
             revert InvalidSchedule();
         }
 
@@ -86,42 +98,54 @@ contract Tapacity {
             revealEndBlock: 0,
             durationBlocks: durationBlocks,
             revealBlocks: revealBlocks,
+            tapGrantWei: tapGrantWei,
             maxPlayers: maxPlayers,
             playerCount: 0,
             totalTaps: 0,
             settled: false
         });
-        emit RoundCreated(roundId, msg.sender, durationBlocks, revealBlocks, maxPlayers);
+        emit RoundCreated(roundId, msg.sender, durationBlocks, revealBlocks, maxPlayers, tapGrantWei);
     }
 
-    function startRound(uint256 roundId, uint32 leadBlocks) external {
+    function startRound(uint256 roundId, uint32 leadBlocks) external payable {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
         if (msg.sender != round.creator) revert OnlyRoundCreator();
         if (round.startBlock != 0) revert RoundAlreadyStarted();
-        if (leadBlocks == 0 || leadBlocks > MAX_START_LEAD_BLOCKS) revert InvalidSchedule();
+        if (leadBlocks == 0 || leadBlocks > MAX_START_LEAD_BLOCKS || round.playerCount == 0) {
+            revert InvalidSchedule();
+        }
+        if (msg.value != uint256(round.tapGrantWei) * round.playerCount) revert InvalidFunding();
 
         round.startBlock = uint64(block.number + leadBlocks);
         round.endBlock = round.startBlock + round.durationBlocks;
         round.revealEndBlock = round.endBlock + round.revealBlocks;
+        for (uint256 i; i < participantAddresses[roundId].length; ++i) {
+            address player = participantAddresses[roundId][i];
+            (bool funded,) = payable(player).call{value: round.tapGrantWei}("");
+            if (!funded) revert FundingTransferFailed();
+            emit PlayerFunded(roundId, player, round.tapGrantWei);
+        }
         emit RoundStarted(roundId, round.startBlock, round.endBlock, round.revealEndBlock);
     }
 
-    function joinRound(uint256 roundId, bytes32 commitment, bytes16 nickname) external {
+    function joinRound(uint256 roundId, address tapper, bytes32 commitment, bytes16 nickname) external {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
         if (round.startBlock != 0) revert JoinWindowClosed();
         if (round.playerCount >= round.maxPlayers) revert PlayerLimitReached();
+        if (tapper == address(0)) revert InvalidFunding();
 
-        Player storage player = players[roundId][msg.sender];
+        Player storage player = players[roundId][tapper];
         if (player.joined) revert AlreadyJoined();
 
         player.commitment = commitment;
         player.nickname = nickname;
         player.joined = true;
+        player.controller = msg.sender;
         round.playerCount += 1;
-        participantAddresses[roundId].push(msg.sender);
-        emit GoalCommitted(roundId, msg.sender, commitment, nickname);
+        participantAddresses[roundId].push(tapper);
+        emit GoalCommitted(roundId, tapper, commitment, nickname);
     }
 
     function tap(uint256 roundId) external {
@@ -138,23 +162,24 @@ contract Tapacity {
         emit TapRecorded(roundId, msg.sender, player.taps);
     }
 
-    function revealGoal(uint256 roundId, uint32 goal, bytes32 salt) external {
+    function revealGoal(uint256 roundId, address playerAddress, uint32 goal, bytes32 salt) external {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
         if (round.startBlock == 0 || block.number < round.endBlock || block.number >= round.revealEndBlock) {
             revert RevealWindowClosed();
         }
 
-        Player storage player = players[roundId][msg.sender];
+        Player storage player = players[roundId][playerAddress];
         if (!player.joined) revert NotJoined();
+        if (msg.sender != playerAddress && msg.sender != player.controller) revert NotPlayerController();
         if (player.revealed) revert AlreadyRevealed();
-        if (goal == 0 || player.commitment != goalCommitment(roundId, msg.sender, goal, salt)) {
+        if (goal == 0 || player.commitment != goalCommitment(roundId, playerAddress, goal, salt)) {
             revert InvalidReveal();
         }
 
         player.goal = goal;
         player.revealed = true;
-        emit GoalRevealed(roundId, msg.sender, goal);
+        emit GoalRevealed(roundId, playerAddress, goal);
     }
 
     function settleRound(uint256 roundId) external {

@@ -9,13 +9,15 @@ contract StartRound is Script {
         Tapacity game = Tapacity(vm.envAddress("TAPACITY_CONTRACT"));
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         uint256 roundId = vm.envUint("TAPACITY_ROUND");
-        uint32 leadBlocks = uint32(vm.envOr("ROUND_START_LEAD_BLOCKS", uint256(5)));
+        uint32 leadBlocks = uint32(vm.envOr("ROUND_START_LEAD_BLOCKS", uint256(15)));
+        Tapacity.Round memory round = game.getRound(roundId);
+        uint256 funding = uint256(round.tapGrantWei) * round.playerCount;
 
         vm.startBroadcast(deployerKey);
-        game.startRound(roundId, leadBlocks);
+        game.startRound{value: funding}(roundId, leadBlocks);
         vm.stopBroadcast();
 
-        Tapacity.Round memory round = game.getRound(roundId);
+        round = game.getRound(roundId);
         console2.log("TAPACITY_ROUND", roundId);
         console2.log("JOINED_PLAYERS", round.playerCount);
         console2.log("START_BLOCK", round.startBlock);
