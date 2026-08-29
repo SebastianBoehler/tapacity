@@ -184,6 +184,7 @@ function RoundGame({
   const reveal = useCallback(async () => {
     if (!session || !player?.joined || player.revealed || revealStarted.current) return;
     revealStarted.current = true;
+    setError(undefined);
     try {
       await retryRateLimited(() => sponsor(
         encodeFunctionData({
@@ -261,7 +262,7 @@ function RoundGame({
           <h2>{phaseLabel(phase)}</h2>
           <span className="player-lane-cue" style={laneStyle}><i aria-hidden="true" />Your lane · {laneName}</span>
         </div>
-        <strong>{phase === "waiting" ? `${round.playerCount} JOINED` : phase === "lobby" ? "GET READY" : phase === "live" ? `${secondsUntil(round.endBlock, blockNumber)}s` : "—"}</strong>
+        <strong>{phase === "waiting" ? `${round.playerCount} JOINED` : phase === "lobby" ? "GET READY" : phase === "live" ? `${secondsUntil(round.endBlock, blockNumber)}s` : phase === "reveal" ? "HANG TIGHT" : "ANY SECOND"}</strong>
       </section>
       {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={proposed} finalized={finalized} />}
       <div className="telemetry-row" aria-label="Transaction telemetry">
@@ -272,7 +273,7 @@ function RoundGame({
         <Metric label="FINAL" value={finalized} />
       </div>
       {error && <p className="error-note" role="alert">{error}</p>}
-      {phase === "reveal" && !player.revealed && <button className="secondary-button" onClick={() => void reveal()}>Retry sponsored reveal</button>}
+      {phase === "reveal" && !player.revealed && error?.startsWith("Automatic reveal failed:") && <button className="secondary-button" onClick={() => void reveal()}>Retry reveal</button>}
       <PlayerPressureZone phase={phase} startBlock={round.startBlock} blockNumber={blockNumber} laneColor={laneColor} onTap={tap} />
     </main>
   );

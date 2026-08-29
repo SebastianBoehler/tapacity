@@ -152,6 +152,10 @@
     inset 0 1px oklch(1 0 0 / 0.09);
 }
 
+.tap-zone.is-status {
+  cursor: default;
+}
+
 .tap-zone span {
   font-size: clamp(3rem, 18vw, 5rem);
   font-weight: 700;
@@ -175,12 +179,12 @@
   letter-spacing: -0.04em;
 }
 
-.tap-zone:not(:disabled):active {
+button.tap-zone:active {
   background: var(--cyan);
   color: var(--carbon-950);
 }
 
-.tap-zone:not(:disabled):active small {
+button.tap-zone:active small {
   color: var(--carbon-800);
 }
 

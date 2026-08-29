@@ -13,7 +13,7 @@ export function phaseLabel(phase: string) {
     waiting: "Waiting for host",
     lobby: "Round armed",
     live: "Execution window",
-    reveal: "Automatic reveal",
-    settlement: "Waiting for settlement",
+    reveal: "Finalizing your taps",
+    settlement: "Results incoming",
   }[phase];
 }

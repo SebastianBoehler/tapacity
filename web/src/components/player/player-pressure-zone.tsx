@@ -13,11 +13,30 @@ export function PlayerPressureZone({
   laneColor: string;
   onTap: () => void;
 }) {
+  const content = (
+    <>
+      <span>{pressureLabel(phase, startBlock, blockNumber)}</span>
+      <small>{pressureDetail(phase, startBlock)}</small>
+    </>
+  );
+
+  if (phase !== "live") {
+    return (
+      <section
+        className={`tap-zone has-lane is-status is-${phase}`}
+        style={{ "--lane-color": laneColor } as CSSProperties}
+        role="status"
+        aria-live="polite"
+      >
+        {content}
+      </section>
+    );
+  }
+
   return (
     <button
       className={`tap-zone has-lane is-${phase}`}
       style={{ "--lane-color": laneColor } as CSSProperties}
-      disabled={phase !== "live"}
       onPointerDown={(event) => { event.preventDefault(); onTap(); }}
       onKeyDown={(event) => {
         if (event.key === " " || event.key === "Enter") {
@@ -26,8 +45,7 @@ export function PlayerPressureZone({
         }
       }}
     >
-      <span>{pressureLabel(phase, startBlock, blockNumber)}</span>
-      <small>{pressureDetail(phase, startBlock)}</small>
+      {content}
     </button>
   );
 }
@@ -37,8 +55,8 @@ function pressureLabel(phase: string, startBlock: bigint, blockNumber: bigint) {
     waiting: "Waiting",
     lobby: `${secondsUntil(startBlock, blockNumber)}s`,
     live: "Tap",
-    reveal: "Locked",
-    settlement: "Results pending",
+    reveal: "Taps locked",
+    settlement: "Results incoming",
   }[phase];
 }
 
@@ -47,8 +65,8 @@ function pressureDetail(phase: string, startBlock: bigint) {
     waiting: "Host starts the shared countdown",
     lobby: `Starts on finalized block ${startBlock.toString()}`,
     live: "One accepted tap · one sponsored onchain call",
-    reveal: "Automatic goal reveal in progress",
-    settlement: "Host is settling finalized results",
+    reveal: "Finalizing transactions and revealing your goal automatically",
+    settlement: "Hang tight — the leaderboard will appear here automatically",
   }[phase];
 }
 
