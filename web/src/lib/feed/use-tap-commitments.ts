@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { decodeEventLog, getAddress, parseAbiItem } from "viem";
 import { monadWebSocketUrl, publicClient } from "@/lib/chain";
 import { tapacityAbi } from "@/lib/contract/abi";
+import { operationId } from "@/lib/proof/tap-proof";
 import {
   advanceTapState,
   commitmentRank,
@@ -21,7 +22,7 @@ export function useTapCommitments(
   endBlock: bigint,
 ) {
   const [connection, setConnection] = useState<"connecting" | "live" | "offline">("connecting");
-  const [taps, setTaps] = useState<Map<`0x${string}`, TapCommitmentState>>(new Map());
+  const [taps, setTaps] = useState<Map<string, TrackedTap>>(new Map());
 
   useEffect(() => {
     if (startBlock === 0n || endBlock === 0n) return;
@@ -42,8 +43,14 @@ export function useTapCommitments(
       setTaps((current) => {
         const next = new Map(current);
         for (const log of logs) {
-          if (!next.has(log.transactionHash)) {
-            next.set(log.transactionHash, {
+          if (log.logIndex === null || log.args.tapNumber === undefined || log.args.player === undefined) continue;
+          const id = operationId(log.transactionHash, log.logIndex);
+          if (!next.has(id)) {
+            next.set(id, {
+              hash: log.transactionHash,
+              logIndex: log.logIndex,
+              player: log.args.player,
+              tapNumber: log.args.tapNumber,
               blockId: log.blockHash,
               blockNumber: `0x${log.blockNumber.toString(16)}`,
               commitState: "Finalized",
@@ -65,19 +72,27 @@ export function useTapCommitments(
           if (decoded.eventName !== "TapRecorded") return;
           const args = decoded.args;
           if (args.roundId !== roundId || getAddress(args.player) !== getAddress(player)) return;
+          const logIndex = Number(BigInt(log.logIndex));
+          const id = operationId(log.transactionHash, logIndex);
           setTaps((current) => {
             const next = new Map(current);
-            const previous = next.get(log.transactionHash);
+            const previous = next.get(id);
             next.set(
-              log.transactionHash,
-              advanceTapState(previous, {
+              id,
+              {
+                ...advanceTapState(previous, {
                 blockId: log.blockId,
                 blockNumber: log.blockNumber,
                 commitState: log.commitState,
                 finalizedAt: commitmentRank(log.commitState) >= 2
                   ? previous?.finalizedAt ?? Date.now()
                   : previous?.finalizedAt,
-              }),
+                }),
+                hash: log.transactionHash,
+                logIndex,
+                player: args.player,
+                tapNumber: args.tapNumber,
+              },
             );
             return next;
           });
@@ -108,8 +123,14 @@ export function useTapCommitments(
       proposed: states.length,
       voted: states.filter((tap) => commitmentRank(tap.commitState) >= 1).length,
       finalized: states.filter((tap) => commitmentRank(tap.commitState) >= 2).length,
-      finalizedTransactions: [...taps].filter(([, tap]) => commitmentRank(tap.commitState) >= 2)
-        .map(([hash, tap]) => ({ hash, ...tap })),
+      finalizedTransactions: [...taps.values()].filter((tap) => commitmentRank(tap.commitState) >= 2),
     };
   }, [connection, taps]);
 }
+
+export type TrackedTap = TapCommitmentState & {
+  hash: `0x${string}`;
+  logIndex: number;
+  player: `0x${string}`;
+  tapNumber: number;
+};

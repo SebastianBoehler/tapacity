@@ -1,8 +1,10 @@
 @import "tailwindcss";
 @import "./game.css";
 @import "./host-results.css";
+@import "./host-podium.css";
 @import "./host-controls.css";
 @import "./room-picker.css";
+@import "./proof-ledgers.css";
 
 :root {
   --carbon-950: oklch(0.105 0.012 285);
@@ -15,6 +17,10 @@
   --violet-soft: oklch(0.69 0.215 295 / 0.18);
   --cyan: oklch(0.85 0.145 195);
   --cyan-soft: oklch(0.85 0.145 195 / 0.16);
+  --measured: var(--cyan);
+  --measured-soft: var(--cyan-soft);
+  --documented: var(--violet);
+  --documented-soft: var(--violet-soft);
   --danger: oklch(0.74 0.18 25);
   --focus: oklch(0.9 0.13 195);
   --radius-sm: 0.65rem;
@@ -169,13 +175,12 @@ a {
   margin: 0;
 }
 
-.host-countdown {
+.host-round-status {
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--carbon-900);
   color: var(--cyan);
   font-family: var(--font-geist-mono), monospace;
-  font-size: clamp(4rem, 16vw, 10rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  line-height: 1;
   text-align: center;
 }
 

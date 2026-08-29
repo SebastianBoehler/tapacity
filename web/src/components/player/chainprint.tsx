@@ -1,6 +1,7 @@
 import type { PlayerState } from "@/lib/contract/use-chain-state";
 import type { GoalSession } from "@/lib/session/goal-session";
 import type { TapOutcomes } from "@/lib/transactions/use-tap-outcomes";
+import { PlayerTapLedger } from "@/components/proof/player-tap-ledger";
 import { chainprintMetrics, type FinalizedTap } from "./chainprint-metrics";
 
 export function Chainprint({
@@ -36,13 +37,7 @@ export function Chainprint({
         <Metric label="MEDIAN FINALITY" value={metrics.medianMs === undefined ? "—" : `${Math.round(metrics.medianMs)} ms`} />
         <Metric label="BUSIEST BLOCK" value={metrics.busiestBlock ? `#${BigInt(metrics.busiestBlock)} · ${metrics.busiestCount} tx` : "—"} />
       </div>
-      <div className="explorer-links">
-        {session.hashes.slice(-3).map((hash) => (
-          <a href={`https://testnet.monadexplorer.com/tx/${hash}`} key={hash} target="_blank" rel="noreferrer">
-            {hash.slice(0, 10)}…
-          </a>
-        ))}
-      </div>
+      <PlayerTapLedger outcomes={outcomes} />
     </main>
   );
 }

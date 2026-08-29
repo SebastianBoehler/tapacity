@@ -106,8 +106,9 @@ function HostRound({
       <div className="host-metrics"><HostMetric label="Joined" value={round.playerCount.toString()} /><HostMetric label="Capacity" value={round.maxPlayers.toString()} /><HostMetric label="Tap gas" value="Sponsored" /></div>
       <HostJoin origin={origin} roundId={roundId} />
       {phase === "waiting" && <button className="primary-button" disabled={busy || round.playerCount === 0} onClick={() => void action("start", roundId)}>Start shared countdown</button>}
-      {phase === "lobby" && <p className="host-countdown">{secondsUntil(round.startBlock, blockNumber)}s</p>}
-      {phase === "live" && <p className="host-countdown">{secondsUntil(round.endBlock, blockNumber)}s</p>}
+      {phase === "lobby" && <p className="host-round-status">Countdown running on player devices.</p>}
+      {phase === "live" && <p className="host-round-status">Round live on {round.playerCount} player device{round.playerCount === 1 ? "" : "s"}.</p>}
+      {phase === "reveal" && <p className="host-round-status">Players are revealing goals automatically.</p>}
       {phase === "settlement" && !round.settled && <button className="primary-button" disabled={busy} onClick={() => void action("settle", roundId)}>Settle results</button>}
     </section>
   );
@@ -115,10 +116,6 @@ function HostRound({
 
 function HostMetric({ label, value }: { label: string; value: string }) {
   return <div><span>{label}</span><strong>{value}</strong></div>;
-}
-
-function secondsUntil(target: bigint, block: bigint) {
-  return Math.max(0, Number(target - block) * 0.4).toFixed(1);
 }
 
 function label(phase: string) {

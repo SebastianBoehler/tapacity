@@ -1,7 +1,7 @@
-import type { TapCommitmentState } from "@/lib/feed/commitment-tracker";
+import type { TrackedTap } from "@/lib/feed/use-tap-commitments";
 import type { GoalSession } from "@/lib/session/goal-session";
 
-export type FinalizedTap = TapCommitmentState & { hash: `0x${string}` };
+export type FinalizedTap = TrackedTap;
 
 export function chainprintMetrics(session: GoalSession, finalized: FinalizedTap[]) {
   const attemptedAt = session.attempts.map((attempt) => attempt.attemptedAt).sort((a, b) => a - b);

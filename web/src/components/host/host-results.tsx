@@ -1,10 +1,11 @@
+import Link from "next/link";
 import {
   MONAD_BLOCK_SECONDS,
   MONAD_DOCUMENTED_FINALITY_MS,
   MONAD_DOCUMENTED_TPS,
 } from "@/lib/round/round-insights";
 import type { RoundState } from "@/lib/contract/use-chain-state";
-import { useRoundResults } from "./use-round-results";
+import { useRoundResults, type RankedPlayer } from "./use-round-results";
 
 export function HostResults({
   contract,
@@ -23,26 +24,27 @@ export function HostResults({
   if (error) return <p className="error-note" role="alert">Unable to reconstruct round insights: {error}</p>;
   if (!results) return <p className="host-status" role="status">Reconstructing finalized round {roundId.toString()}…</p>;
   const { players, summary } = results;
+  const podium = players.slice(0, 3);
+  const remaining = players.slice(3);
 
   return (
     <article className="host-results">
       <div className="results-heading">
         <h1>Round {roundId.toString()}</h1>
-        <button className="secondary-button results-new-round" onClick={onNewRound}>Start new round</button>
+        <div className="results-actions">
+          <Link className="secondary-button results-proof-link" href={`/host/proof?round=${roundId.toString()}`}>Onchain proof</Link>
+          <button className="secondary-button results-new-round" onClick={onNewRound}>Start new round</button>
+        </div>
       </div>
 
       <section className="leaderboard" aria-labelledby="leaderboard-title">
         <h2 id="leaderboard-title">Leaderboard</h2>
-        <ol>
-          {players.map((player, index) => (
-            <li className={index === 0 ? "winner" : undefined} key={player.address}>
-              <strong className="leaderboard-rank">{index + 1}</strong>
-              <div className="leaderboard-player"><strong>{player.name}</strong><span>{shortAddress(player.address)}</span></div>
-              <ResultValue value={player.finalized.toString()} label="final" />
-              <ResultValue value={formatScore(player.score)} label="score" />
-            </li>
-          ))}
+        <ol className="podium" data-count={podium.length}>
+          {podium.map((player, index) => <PodiumPlace key={player.address} player={player} rank={index + 1} />)}
         </ol>
+        {remaining.length > 0 && <ol className="leaderboard-rest" start={4}>
+          {remaining.map((player, index) => <LeaderboardRow key={player.address} player={player} rank={index + 4} />)}
+        </ol>}
       </section>
 
       <section className="telemetry-section" aria-labelledby="telemetry-title">
@@ -68,6 +70,27 @@ export function HostResults({
         </div>
       </section>
     </article>
+  );
+}
+
+function PodiumPlace({ player, rank }: { player: RankedPlayer; rank: number }) {
+  return (
+    <li className={`podium-place place-${rank}`}>
+      <strong className="leaderboard-rank">#{rank}</strong>
+      <div className="leaderboard-player"><strong>{player.name}</strong><span>{shortAddress(player.address)}</span></div>
+      <div className="podium-stats"><ResultValue value={player.finalized.toString()} label="finalized" /><ResultValue value={`${(player.accuracyPpm / 10_000).toFixed(1)}%`} label="accuracy" /><ResultValue value={formatScore(player.score)} label="score" /></div>
+    </li>
+  );
+}
+
+function LeaderboardRow({ player, rank }: { player: RankedPlayer; rank: number }) {
+  return (
+    <li>
+      <strong className="leaderboard-rank">{rank}</strong>
+      <div className="leaderboard-player"><strong>{player.name}</strong><span>{shortAddress(player.address)}</span></div>
+      <ResultValue value={player.finalized.toString()} label="final" />
+      <ResultValue value={formatScore(player.score)} label="score" />
+    </li>
   );
 }
 

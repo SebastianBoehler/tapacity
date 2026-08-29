@@ -27,12 +27,12 @@ export function advanceTapState(
   return current;
 }
 
-export function pruneSupersededTapStates(
-  states: Map<`0x${string}`, TapCommitmentState>,
+export function pruneSupersededTapStates<Key, State extends TapCommitmentState>(
+  states: Map<Key, State>,
   canonicalHead: Required<Pick<TapCommitmentState, "blockId" | "blockNumber" | "commitState">>,
 ) {
   if (rank[canonicalHead.commitState] < rank.Voted) return states;
-  let next: Map<`0x${string}`, TapCommitmentState> | undefined;
+  let next: Map<Key, State> | undefined;
   for (const [hash, state] of states) {
     const superseded = state.blockNumber === canonicalHead.blockNumber
       && state.blockId !== canonicalHead.blockId

@@ -2,7 +2,7 @@
 
 import { PrivyProvider } from "@privy-io/react-auth";
 import { tapacityChain } from "@/lib/chain";
-import { PlayerGame } from "./player/player-game";
+import { PlayerEntry } from "./player/player-entry";
 
 export function TapacityApp({
   appId,
@@ -33,7 +33,7 @@ export function TapacityApp({
         appearance: { theme: "dark", accentColor: "#836ef9" },
       }}
     >
-      <PlayerGame contract={contract} roundId={roundId} alchemyApiKey={alchemyApiKey} alchemyPolicyId={alchemyPolicyId} />
+      <PlayerEntry contract={contract} roundId={roundId} alchemyApiKey={alchemyApiKey} alchemyPolicyId={alchemyPolicyId} />
     </PrivyProvider>
   );
 }

@@ -33,7 +33,12 @@ export function useSponsoredTapSubmitter({
         const status = await client.waitForCallsStatus({ id, timeout: 30_000 });
         const hash = status.receipts?.[0]?.transactionHash;
         if (!hash) throw new Error(status.status === "failure" ? "Sponsored tap reverted without a receipt" : "Sponsored tap receipt unavailable");
-        return hash;
+        return {
+          hash,
+          callId: id,
+          callStatus: status.status === "failure" ? "failure" : "success",
+          receiptBlock: status.receipts?.[0]?.blockNumber?.toString(),
+        };
       },
     });
   }, [apiKey, contract, policyId, session]);

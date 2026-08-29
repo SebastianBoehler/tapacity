@@ -5,6 +5,7 @@ import { hexToString } from "viem";
 import { tapacityAbi } from "@/lib/contract/abi";
 import type { PlayerState, RoundState } from "@/lib/contract/use-chain-state";
 import { publicClient } from "@/lib/chain";
+import { compareTapProof, operationId, type TapProofRecord } from "@/lib/proof/tap-proof";
 import { summarizeRound, type RoundSummary } from "@/lib/round/round-insights";
 
 export type RankedPlayer = {
@@ -19,6 +20,7 @@ export type RankedPlayer = {
 export type RoundResults = {
   players: RankedPlayer[];
   summary: RoundSummary;
+  taps: TapProofRecord[];
 };
 
 export function useRoundResults({
@@ -64,13 +66,19 @@ export function useRoundResults({
           Promise.all(blockNumbers.map((blockNumber) => publicClient.getBlock({ blockNumber, includeTransactions: true }))),
         ]);
 
-        const acceptedTaps = logs.flatMap((log) => log.blockNumber === null ? [] : [{
-          blockNumber: log.blockNumber,
-          player: log.args.player,
-          transactionHash: log.transactionHash,
-        }]);
-        if (BigInt(acceptedTaps.length) !== totalTaps) {
-          throw new Error(`Finalized log replay returned ${acceptedTaps.length} of ${totalTaps} taps`);
+        const taps = logs.flatMap((log) => {
+          if (log.blockNumber === null || log.logIndex === null || log.args.player === undefined || log.args.tapNumber === undefined) return [];
+          return [{
+            operationId: operationId(log.transactionHash, log.logIndex),
+            tapNumber: log.args.tapNumber,
+            player: log.args.player,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber,
+            logIndex: log.logIndex,
+          }];
+        }).sort(compareTapProof);
+        if (BigInt(taps.length) !== totalTaps) {
+          throw new Error(`Finalized log replay returned ${taps.length} of ${totalTaps} taps`);
         }
 
         const blocks = chainBlocks.map((block) => ({
@@ -91,12 +99,12 @@ export function useRoundResults({
         const summary = summarizeRound({
           startBlock,
           endBlock,
-          acceptedTaps,
+          acceptedTaps: taps,
           blocks,
           totalGoal: players.reduce((total, player) => total + player.goal, 0),
         });
         if (active) {
-          setResults({ players, summary });
+          setResults({ players, summary, taps });
           setError(undefined);
         }
       } catch (cause) {

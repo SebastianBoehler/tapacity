@@ -5,8 +5,22 @@ type Address = `0x${string}`;
 type TapCall = { to: Address; data: Hex; value: bigint };
 
 export type SponsoredSubmissionResult =
-  | { attemptId: string; status: "submitted"; hash: Hex }
+  | {
+      attemptId: string;
+      status: "submitted";
+      hash: Hex;
+      callId?: string;
+      callStatus?: "success" | "failure";
+      receiptBlock?: string;
+    }
   | { attemptId: string; status: "failed"; error: string };
+
+export type SponsoredTapReceipt = {
+  hash: Hex;
+  callId: string;
+  callStatus: "success" | "failure";
+  receiptBlock?: string;
+};
 
 const MAX_CONCURRENT_SUBMISSIONS = 12;
 
@@ -17,7 +31,7 @@ export function createSponsoredSubmitter({
 }: {
   contract: Address;
   prepare?: () => Promise<void>;
-  sendTap: (call: TapCall, nonceKey: Hex) => Promise<Hex>;
+  sendTap: (call: TapCall, nonceKey: Hex) => Promise<Hex | SponsoredTapReceipt>;
 }) {
   const attempts = new Map<string, Promise<SponsoredSubmissionResult>>();
   const queue: Array<{
@@ -29,12 +43,14 @@ export function createSponsoredSubmitter({
 
   async function execute(roundId: bigint, attemptId: string): Promise<SponsoredSubmissionResult> {
     try {
-      const hash = await sendTap({
+      const receipt = await sendTap({
         to: contract,
         value: 0n,
         data: encodeFunctionData({ abi: tapacityAbi, functionName: "tap", args: [roundId] }),
       }, nonceKey(attemptId));
-      return { attemptId, status: "submitted", hash };
+      return typeof receipt === "string"
+        ? { attemptId, status: "submitted", hash: receipt }
+        : { attemptId, status: "submitted", ...receipt };
     } catch (cause) {
       return {
         attemptId,

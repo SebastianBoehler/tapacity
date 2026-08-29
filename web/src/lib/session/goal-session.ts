@@ -21,6 +21,10 @@ export type TapAttempt = {
   attemptedAt: number;
   submittedAt?: number;
   hash?: `0x${string}`;
+  callId?: string;
+  callStatus?: "success" | "failure";
+  receiptBlock?: string;
+  failure?: string;
 };
 
 export function createGoalSession(goal: number, nickname: string): GoalSession {

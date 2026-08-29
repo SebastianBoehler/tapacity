@@ -142,6 +142,11 @@
   text-transform: uppercase;
 }
 
+.tap-zone.is-settlement span {
+  font-size: clamp(2rem, 10vw, 3.5rem);
+  letter-spacing: -0.04em;
+}
+
 .tap-zone:not(:disabled):active {
   background: var(--cyan);
   color: var(--carbon-950);
