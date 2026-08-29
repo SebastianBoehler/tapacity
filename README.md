@@ -11,6 +11,9 @@ A 20-second competitive tapping game where every submitted tap is a separately a
 [![Live on Vercel](https://img.shields.io/badge/Live_on-Vercel-000000?style=flat-square&logo=vercel)](https://web-alpha-six-19.vercel.app/)
 [![Contract](https://img.shields.io/badge/Contract-verified-00E5E8?style=flat-square)](https://testnet.monadexplorer.com/address/0x6adA9a80D616Ce2Bd0FAaf0dD26c52E8f7985241)
 
+**Live:** [web-alpha-six-19.vercel.app](https://web-alpha-six-19.vercel.app/)<br>
+**Verified contract:** [`0x6adA9a80D616Ce2Bd0FAaf0dD26c52E8f7985241`](https://testnet.monadexplorer.com/address/0x6adA9a80D616Ce2Bd0FAaf0dD26c52E8f7985241)
+
 [Play TAPACITY](https://web-alpha-six-19.vercel.app/) · [Host a round](https://web-alpha-six-19.vercel.app/host) · [Open Round 10](https://web-alpha-six-19.vercel.app/host?round=10) · [Inspect its 66 tap operations](https://web-alpha-six-19.vercel.app/host/proof?round=10)
 
 </div>
