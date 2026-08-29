@@ -1,0 +1,207 @@
+.play-screen {
+  padding-block-end: calc(35dvh + env(safe-area-inset-bottom) + 2rem);
+}
+
+.phase-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-block-end: 1.75rem;
+}
+
+.phase-panel h2,
+.result-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+}
+
+.phase-panel strong,
+.telemetry-row strong,
+.rank-number,
+.result-grid strong {
+  font-family: var(--font-geist-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-panel strong {
+  color: var(--cyan);
+  font-size: 1.35rem;
+}
+
+.track-panel {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--carbon-850);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.06), 0 1rem 3rem oklch(0 0 0 / 0.2);
+}
+
+.track-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(0.7rem, 1fr));
+  gap: 0.3rem;
+  margin-block-start: 0.85rem;
+}
+
+.track-cell {
+  min-width: 0;
+  border-radius: 0.18rem;
+  aspect-ratio: 1;
+  background: var(--carbon-800);
+}
+
+.track-cell.pending {
+  background: var(--violet);
+  box-shadow: 0 0 0.65rem var(--violet-soft);
+}
+
+.track-cell.finalized {
+  background: var(--cyan);
+  box-shadow: 0 0 0.65rem var(--cyan-soft);
+}
+
+.overdrive {
+  margin-block-start: 0.75rem;
+  color: var(--violet);
+}
+
+.telemetry-row,
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+}
+
+.telemetry-row > div,
+.result-grid > div {
+  min-width: 0;
+}
+
+.telemetry-row span,
+.result-grid span {
+  display: block;
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+}
+
+.telemetry-row strong,
+.result-grid strong {
+  display: block;
+  margin-block-start: 0.15rem;
+  font-size: 1rem;
+}
+
+.tap-zone {
+  position: fixed;
+  z-index: 5;
+  inset-inline: 50% auto;
+  inset-block-end: 0;
+  translate: -50% 0;
+  display: flex;
+  width: min(100%, 32rem);
+  min-height: calc(33dvh + env(safe-area-inset-bottom));
+  padding: 2rem 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(145deg, var(--carbon-800), var(--carbon-850));
+  box-shadow: 0 -1.5rem 4rem oklch(0 0 0 / 0.32), inset 0 1px oklch(1 0 0 / 0.09);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.tap-zone span {
+  font-size: clamp(3rem, 18vw, 5rem);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.tap-zone small {
+  margin-block-start: 0.75rem;
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.tap-zone:not(:disabled):active {
+  background: var(--cyan);
+  color: var(--carbon-950);
+}
+
+.tap-zone:not(:disabled):active small {
+  color: var(--carbon-800);
+}
+
+.chainprint {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.result-title {
+  color: var(--muted);
+}
+
+.rank-number {
+  margin-block: 0.5rem 2rem;
+  color: var(--cyan);
+  font-size: clamp(5rem, 28vw, 8rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.08em;
+}
+
+.result-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.result-grid > div {
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--carbon-850);
+}
+
+.result-grid strong {
+  font-size: 1.5rem;
+}
+
+.explorer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block-start: 1.5rem;
+}
+
+@media (min-width: 40rem) {
+  .tap-zone {
+    inset-block-end: 2rem;
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (forced-colors: active) {
+  .track-cell.pending,
+  .track-cell.finalized {
+    border: 2px solid ButtonText;
+  }
+}
