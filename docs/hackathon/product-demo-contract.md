@@ -115,7 +115,8 @@ Measured application results and documented protocol capacity are labeled separa
 | Five-wallet load probe | Specified | Admitted only after one-player pass |
 | Room-envelope probe | Specified | Admitted only after five-wallet pass |
 | Host room control | Deployed | Production `/host` created onchain round 4 without a credential and showed its QR, full join URL, live count, and start control |
-| Public room discovery | Deployed | Production `/` discovered open round 4 from finalized state and opened its guest flow without manual URL editing |
+| Host round archive | Verified | Finalized `roundCount`/`getRound` reads list every round newest-first; settled rounds reopen durable `/host?round=N` final views and older rounds stay collapsed |
+| Public room discovery | Verified | Local browser check exposed only the newest round when joinable and hid older abandoned lobbies; production deployment remains |
 | Vercel deployment | Deployed | `web-alpha-six-19.vercel.app` serves the verified contract and keyless host revision |
 | Player tap proof ledger | Implemented | Chainprint classifies every physical tap as finalized, submitted, late, failed, or not submitted and links each available outer transaction |
 | Round onchain proof ledger | Verified | Local round 10 replay reconstructed all 66 canonical `TapRecorded` operations across 26 outer transactions using transaction hash plus log index |
