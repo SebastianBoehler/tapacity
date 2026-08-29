@@ -1,20 +1,16 @@
 import { createPublicClient, fallback, http } from "viem";
 import { monadTestnet } from "viem/chains";
+import { paidRpcUrl, publicRpcUrls } from "./rpc-endpoints";
 
 export const tapacityChain = monadTestnet;
 export const monadWebSocketUrl = "wss://testnet-rpc.monad.xyz";
-const rpcUrls = [
-  "https://testnet-rpc.monad.xyz",
-  "https://rpc.ankr.com/monad_testnet",
-  "https://rpc-testnet.monadinfra.com",
-];
-
 export const publicClient = createPublicClient({
   chain: tapacityChain,
   transport: fallback(orderedRpcUrls().map((url) => http(url, { batch: true }))),
 });
 
 function orderedRpcUrls() {
+  if (paidRpcUrl) return [paidRpcUrl, ...publicRpcUrls];
   let primary = 0;
   if (typeof window !== "undefined") {
     try {
@@ -25,7 +21,7 @@ function orderedRpcUrls() {
       primary = 0;
     }
   }
-  return [rpcUrls[primary], ...rpcUrls.filter((_, index) => index !== primary)];
+  return [publicRpcUrls[primary], ...publicRpcUrls.filter((_, index) => index !== primary)];
 }
 
 function weightedRpcIndex() {

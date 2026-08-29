@@ -1,19 +1,18 @@
 import { keccak256, type Hex } from "viem";
+import { paidRpcUrl, publicRpcUrls } from "@/lib/rpc-endpoints";
 
 type Endpoint = { url: string; weight: number };
 
-const ENDPOINTS: Endpoint[] = [
-  { url: "https://testnet-rpc.monad.xyz", weight: 50 },
-  { url: "https://rpc.ankr.com/monad_testnet", weight: 20 },
-  { url: "https://rpc-testnet.monadinfra.com", weight: 20 },
-];
+const ENDPOINTS: Endpoint[] = publicRpcUrls.map((url, index) => ({ url, weight: [50, 20, 20][index] }));
 
 const ACCEPTED_ERRORS = ["already known", "nonce too low", "known transaction"];
 const RETRYABLE_ERRORS = ["429", "rate limit", "too many requests", "timeout", "temporarily", "upstream"];
 class RpcRejectedError extends Error {}
 
 export function createRpcRouter(wallet: `0x${string}`, request: typeof fetch = fetch) {
-  const ordered = stickyOrder(wallet, ENDPOINTS);
+  const ordered = paidRpcUrl
+    ? [{ url: paidRpcUrl, weight: 1 }, ...stickyOrder(wallet, ENDPOINTS)]
+    : stickyOrder(wallet, ENDPOINTS);
 
   async function broadcast(raw: Hex): Promise<Hex> {
     const expectedHash = keccak256(raw);
