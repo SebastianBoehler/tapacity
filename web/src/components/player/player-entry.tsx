@@ -1,7 +1,7 @@
 "use client";
 
 import { getEmbeddedConnectedWallet, useGuestAccounts, usePrivy, useWallets } from "@privy-io/react-auth";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ConnectedGame } from "./player-game";
 import { StatusScreen } from "./player-ui";
 
@@ -20,17 +20,31 @@ export function PlayerEntry({
   const { createGuestAccount } = useGuestAccounts();
   const { wallets } = useWallets();
   const [error, setError] = useState<string>();
+  const creatingGuest = useRef(false);
   const wallet = getEmbeddedConnectedWallet(wallets);
+
+  const startGuestAccount = useCallback(() => {
+    if (creatingGuest.current) return;
+    creatingGuest.current = true;
+    setError(undefined);
+    void createGuestAccount().catch((cause) => setError(message(cause)));
+  }, [createGuestAccount]);
+
+  useEffect(() => {
+    if (ready && !authenticated) startGuestAccount();
+  }, [authenticated, ready, startGuestAccount]);
 
   if (!ready) return <StatusScreen label="Initializing guest wallet" />;
   if (!authenticated) {
+    if (!error) return <StatusScreen label="Creating guest wallet" />;
     return (
       <main className="entry-screen">
-        <h1>TAPACITY</h1>
-        <p className="lead">Round {roundId.toString()} on Monad Testnet. Predict your output, then turn every accepted tap into a sponsored onchain operation.</p>
-        <button className="primary-button" onClick={() => void createGuestAccount().catch((cause) => setError(message(cause)))}>Continue as guest</button>
-        <p className="cost-note">No wallet extension. No MON. You never pay gas.</p>
-        {error && <p className="error-note" role="alert">{error}</p>}
+        <h1>Wallet setup failed</h1>
+        <p className="error-note" role="alert">{error}</p>
+        <button className="primary-button" onClick={() => {
+          creatingGuest.current = false;
+          startGuestAccount();
+        }}>Retry wallet setup</button>
       </main>
     );
   }
