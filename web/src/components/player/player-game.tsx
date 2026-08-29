@@ -1,7 +1,7 @@
 "use client";
 
 import { getEmbeddedConnectedWallet, useGuestAccounts, usePrivy, useSendTransaction, useWallets } from "@privy-io/react-auth";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { encodeFunctionData } from "viem";
 import { tapacityAbi } from "@/lib/contract/abi";
 import { type PlayerState, type RoundState, useChainState } from "@/lib/contract/use-chain-state";
@@ -16,8 +16,8 @@ import {
   type GoalSession,
 } from "@/lib/session/goal-session";
 import { useFinalityPersistence } from "@/lib/session/use-finality-persistence";
-import { createSponsoredSubmitter } from "@/lib/transactions/sponsored-submitter";
 import { retryRateLimited } from "@/lib/transactions/retry-rate-limit";
+import { useRawTapSubmitter } from "@/lib/transactions/use-raw-tap-submitter";
 import { useTapOutcomes } from "@/lib/transactions/use-tap-outcomes";
 import { Chainprint } from "./chainprint";
 import { Header, Metric, StatusScreen } from "./player-ui";
@@ -36,7 +36,7 @@ export function PlayerGame({ contract, roundId }: { contract: `0x${string}`; rou
     return (
       <main className="entry-screen">
         <h1>TAPACITY</h1>
-        <p className="lead">Round {roundId.toString()} on Monad Testnet. Predict your output, then turn every accepted tap into a sponsored transaction.</p>
+        <p className="lead">Round {roundId.toString()} on Monad Testnet. Predict your output, then turn every accepted tap into a direct transaction.</p>
         <button
           className="primary-button"
           onClick={() => void createGuestAccount().catch((cause) => setError(message(cause)))}
@@ -62,7 +62,10 @@ function ConnectedGame({
   roundId: bigint;
   address: `0x${string}`;
 }) {
-  const chain = useChainState(contract, roundId, address);
+  const key = useMemo(() => sessionKey(contract, roundId, address), [address, contract, roundId]);
+  const [session, setSession] = useState<GoalSession | null>(() => loadGoalSession(key));
+  const playerAddress = session?.tapperAddress ?? address;
+  const chain = useChainState(contract, roundId, playerAddress);
   if (chain.error && !chain.round) return <StatusScreen label="Unable to read the round" detail={chain.error} />;
   if (!chain.round || !chain.blockNumber) return <StatusScreen label="Syncing finalized round state" />;
   if (chain.round.creator === "0x0000000000000000000000000000000000000000") {
@@ -73,7 +76,11 @@ function ConnectedGame({
       key={`${contract}:${roundId}:${address}`}
       contract={contract}
       roundId={roundId}
-      address={address}
+      address={playerAddress}
+      controller={address}
+      storageKey={key}
+      session={session}
+      setSession={setSession}
       blockNumber={chain.blockNumber}
       round={chain.round}
       player={chain.playerState}
@@ -86,6 +93,10 @@ function RoundGame({
   contract,
   roundId,
   address,
+  controller,
+  storageKey,
+  session,
+  setSession,
   blockNumber,
   round,
   player,
@@ -94,14 +105,16 @@ function RoundGame({
   contract: `0x${string}`;
   roundId: bigint;
   address: `0x${string}`;
+  controller: `0x${string}`;
+  storageKey: string;
+  session: GoalSession | null;
+  setSession: Dispatch<SetStateAction<GoalSession | null>>;
   blockNumber: bigint;
   round: RoundState;
   player?: PlayerState;
   ranking: readonly `0x${string}`[];
 }) {
   const { sendTransaction } = useSendTransaction();
-  const key = useMemo(() => sessionKey(contract, roundId, address), [address, contract, roundId]);
-  const [session, setSession] = useState<GoalSession | null>(() => loadGoalSession(key));
   const [goal, setGoal] = useState(50);
   const [nickname, setNickname] = useState("");
   const [busy, setBusy] = useState(false);
@@ -113,9 +126,9 @@ function RoundGame({
   const sponsor = useCallback(
     (data: `0x${string}`, gasLimit: bigint) => sendTransaction(
       { to: contract, value: 0n, gasLimit, data },
-      { address, sponsor: true, uiOptions: { showWalletUIs: false } },
+      { address: controller, sponsor: true, uiOptions: { showWalletUIs: false } },
     ),
-    [address, contract, sendTransaction],
+    [contract, controller, sendTransaction],
   );
 
   const persist = useCallback(
@@ -123,23 +136,25 @@ function RoundGame({
       setSession((current) => {
         if (!current) return current;
         const next = update(current);
-        saveGoalSession(key, next);
+        saveGoalSession(storageKey, next);
         return next;
       });
     },
-    [key],
+    [setSession, storageKey],
   );
 
   useFinalityPersistence(feed.finalizedTransactions, persist);
   const outcomes = useTapOutcomes(session?.hashes ?? [], feed.finalizedTransactions, round.endBlock, round.settled);
-  const submitter = useMemo(
-    () => createSponsoredSubmitter({ contract, wallet: address, send: sendTransaction }),
-    [address, contract, sendTransaction],
-  );
+  const submitter = useRawTapSubmitter(contract, session);
 
   useEffect(() => {
-    if (phase !== "live") submitter.cancelPending("Tap window closed before sponsorship");
+    if (phase !== "live") submitter?.cancelPending("Tap window closed before submission");
   }, [phase, submitter]);
+
+  useEffect(() => {
+    if (!submitter || !player?.joined || (phase !== "waiting" && phase !== "lobby")) return;
+    void submitter.prepare().catch((cause) => setError(`Tap signer unavailable: ${message(cause)}`));
+  }, [phase, player?.joined, submitter]);
 
   const join = async () => {
     if (goal < 1 || goal > 200) {
@@ -155,12 +170,12 @@ function RoundGame({
         encodeFunctionData({
           abi: tapacityAbi,
           functionName: "joinRound",
-          args: [roundId, goalCommitment(roundId, address, next.goal, next.salt), nicknameBytes(next.nickname)],
+          args: [roundId, next.tapperAddress, goalCommitment(roundId, next.tapperAddress, next.goal, next.salt), nicknameBytes(next.nickname)],
         }),
         180_000n,
       );
       const saved = { ...next, joinHash: hash };
-      saveGoalSession(key, saved);
+      saveGoalSession(storageKey, saved);
       setSession(saved);
     } catch (cause) {
       setError(message(cause));
@@ -177,7 +192,7 @@ function RoundGame({
         encodeFunctionData({
           abi: tapacityAbi,
           functionName: "revealGoal",
-          args: [roundId, session.goal, session.salt],
+          args: [roundId, address, session.goal, session.salt],
         }),
         120_000n,
       ),
@@ -186,7 +201,7 @@ function RoundGame({
       revealStarted.current = false;
       setError(`Automatic reveal failed: ${message(cause)}`);
     }
-  }, [player, roundId, session, sponsor]);
+  }, [address, player, roundId, session, sponsor]);
 
   useEffect(() => {
     if (phase !== "reveal") return;
@@ -195,7 +210,7 @@ function RoundGame({
   }, [phase, reveal]);
 
   const tap = () => {
-    if (phase !== "live" || !player?.joined || !session) return;
+    if (phase !== "live" || !player?.joined || !session || !submitter) return;
     const attemptId = `${roundId}:${address}:${++attempt.current}`;
     const attemptedAt = Date.now();
     persist((current) => ({
@@ -256,6 +271,8 @@ function RoundGame({
   }
 
   const finalized = Math.max(feed.finalized, player.taps);
+  const voted = Math.max(feed.voted, finalized);
+  const proposed = Math.max(feed.proposed, voted);
   return (
     <main className={`play-screen ${phase === "live" ? "is-live" : ""}`}>
       <h1 className="sr-only">TAPACITY round {roundId.toString()}</h1>
@@ -264,12 +281,12 @@ function RoundGame({
         <h2>{phaseLabel(phase)}</h2>
         <strong>{phase === "waiting" ? `${round.playerCount}/${round.maxPlayers} JOINED` : phase === "lobby" ? `${round.startBlock - blockNumber} BLOCKS` : phase === "live" ? `${round.endBlock - blockNumber} BLOCKS` : "—"}</strong>
       </section>
-      {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={Math.max(feed.proposed, session.submitted)} finalized={finalized} />}
+      {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={Math.max(proposed, session.submitted)} finalized={finalized} />}
       <div className="telemetry-row" aria-label="Transaction telemetry">
         <Metric label="ATT" value={session?.attempted ?? 0} />
         <Metric label="SUB" value={session?.submitted ?? 0} />
-        <Metric label="PROP" value={feed.proposed} />
-        <Metric label="VOTE" value={feed.voted} />
+        <Metric label="PROP" value={proposed} />
+        <Metric label="VOTE" value={voted} />
         <Metric label="FINAL" value={finalized} />
       </div>
       {error && <p className="error-note" role="alert">{error}</p>}
@@ -282,12 +299,12 @@ function RoundGame({
         onKeyDown={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); tap(); } }}
       >
         <span>{phase === "live" ? "Tap" : phase === "waiting" ? "Waiting" : phase === "lobby" ? "Armed" : "Locked"}</span>
-        <small>One accepted tap · one sponsored transaction</small>
+        <small>One accepted tap · one direct Monad transaction</small>
       </button>
     </main>
   );
 }
 
 function message(cause: unknown) {
-  return cause instanceof Error ? cause.message : "Sponsored transaction failed";
+  return cause instanceof Error ? cause.message : "Transaction failed";
 }

@@ -12,6 +12,7 @@ export type RoundState = {
   revealEndBlock: bigint;
   durationBlocks: number;
   revealBlocks: number;
+  tapGrantWei: bigint;
   maxPlayers: number;
   playerCount: number;
   totalTaps: bigint;
@@ -28,6 +29,7 @@ export type PlayerState = {
   lastTapBlock: bigint;
   joined: boolean;
   revealed: boolean;
+  controller: `0x${string}`;
 };
 
 export function useChainState(

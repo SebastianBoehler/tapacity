@@ -1,9 +1,12 @@
 import { encodeAbiParameters, keccak256, toHex } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 export type GoalSession = {
   goal: number;
   nickname: string;
   salt: `0x${string}`;
+  tapPrivateKey: `0x${string}`;
+  tapperAddress: `0x${string}`;
   joinHash?: `0x${string}`;
   attempted: number;
   submitted: number;
@@ -23,10 +26,13 @@ export type TapAttempt = {
 export function createGoalSession(goal: number, nickname: string): GoalSession {
   const saltBytes = new Uint8Array(32);
   crypto.getRandomValues(saltBytes);
+  const tapPrivateKey = generatePrivateKey();
   return {
     goal,
     nickname,
     salt: toHex(saltBytes),
+    tapPrivateKey,
+    tapperAddress: privateKeyToAccount(tapPrivateKey).address,
     attempted: 0,
     submitted: 0,
     failed: 0,
