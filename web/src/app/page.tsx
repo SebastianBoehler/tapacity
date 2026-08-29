@@ -8,10 +8,12 @@ export default async function Page({
 }) {
   const { round } = await searchParams;
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+  const clientId = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID;
   const contract = process.env.NEXT_PUBLIC_TAPACITY_CONTRACT;
   const roundId = round && /^\d+$/.test(round) ? BigInt(round) : undefined;
   const missing = [
     !appId && "NEXT_PUBLIC_PRIVY_APP_ID",
+    !clientId && "NEXT_PUBLIC_PRIVY_CLIENT_ID",
     (!contract || !isAddress(contract)) && "NEXT_PUBLIC_TAPACITY_CONTRACT",
     !roundId && "?round=<roundId>",
   ].filter(Boolean) as string[];
@@ -28,6 +30,6 @@ export default async function Page({
     );
   }
 
-  if (!appId || !contract || !isAddress(contract) || roundId === undefined) return null;
-  return <TapacityApp appId={appId} contract={contract} roundId={roundId} />;
+  if (!appId || !clientId || !contract || !isAddress(contract) || roundId === undefined) return null;
+  return <TapacityApp appId={appId} clientId={clientId} contract={contract} roundId={roundId} />;
 }

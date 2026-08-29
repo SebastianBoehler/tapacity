@@ -6,16 +6,19 @@ import { PlayerGame } from "./player/player-game";
 
 export function TapacityApp({
   appId,
+  clientId,
   contract,
   roundId,
 }: {
   appId: string;
+  clientId: string;
   contract: `0x${string}`;
   roundId: bigint;
 }) {
   return (
     <PrivyProvider
       appId={appId}
+      clientId={clientId}
       config={{
         defaultChain: tapacityChain,
         supportedChains: [tapacityChain],
