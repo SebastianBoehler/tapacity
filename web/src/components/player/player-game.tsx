@@ -26,6 +26,7 @@ import { PlayerSetup } from "./player-setup";
 import { Header, Metric, StatusScreen } from "./player-ui";
 import { currentPhase, phaseLabel } from "./round-phase";
 import { TransactionTrack } from "./transaction-track";
+import { useRoundAudio } from "./use-round-audio";
 
 export function ConnectedGame({
   contract,
@@ -107,6 +108,7 @@ function RoundGame({
   const attempt = useRef(session?.attempted ?? 0);
   const feed = useTapCommitments(contract, address, roundId, round.startBlock, round.endBlock);
   const phase = currentPhase(blockNumber, round);
+  useRoundAudio(phase);
   const sponsor = useCallback(
     (data: `0x${string}`, gasLimit: bigint) => sendTransaction(
       { to: contract, value: 0n, gasLimit, data },
