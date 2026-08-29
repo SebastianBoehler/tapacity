@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 contract Tapacity {
     uint16 public constant MAX_PLAYERS = 32;
+    uint32 public constant MAX_START_LEAD_BLOCKS = 25;
 
     error InvalidRound();
     error InvalidSchedule();
@@ -16,15 +17,13 @@ contract Tapacity {
     error AlreadyRevealed();
     error SettlementWindowOpen();
     error AlreadySettled();
+    error OnlyRoundCreator();
+    error RoundAlreadyStarted();
 
     event RoundCreated(
-        uint256 indexed roundId,
-        address indexed creator,
-        uint64 startBlock,
-        uint64 endBlock,
-        uint64 revealEndBlock,
-        uint16 maxPlayers
+        uint256 indexed roundId, address indexed creator, uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers
     );
+    event RoundStarted(uint256 indexed roundId, uint64 startBlock, uint64 endBlock, uint64 revealEndBlock);
     event GoalCommitted(uint256 indexed roundId, address indexed player, bytes32 commitment, bytes16 nickname);
     event TapRecorded(uint256 indexed roundId, address indexed player, uint32 tapNumber);
     event GoalRevealed(uint256 indexed roundId, address indexed player, uint32 goal);
@@ -45,6 +44,8 @@ contract Tapacity {
         uint64 startBlock;
         uint64 endBlock;
         uint64 revealEndBlock;
+        uint32 durationBlocks;
+        uint32 revealBlocks;
         uint16 maxPlayers;
         uint16 playerCount;
         uint64 totalTaps;
@@ -69,42 +70,47 @@ contract Tapacity {
     mapping(uint256 roundId => address[] players) private participantAddresses;
     mapping(uint256 roundId => address[] players) private rankings;
 
-    function createRound(uint64 startBlock, uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers)
+    function createRound(uint32 durationBlocks, uint32 revealBlocks, uint16 maxPlayers)
         external
         returns (uint256 roundId)
     {
-        if (
-            startBlock <= block.number || durationBlocks == 0 || revealBlocks == 0 || maxPlayers == 0
-                || maxPlayers > MAX_PLAYERS
-        ) {
+        if (durationBlocks == 0 || revealBlocks == 0 || maxPlayers == 0 || maxPlayers > MAX_PLAYERS) {
             revert InvalidSchedule();
         }
 
         roundId = ++roundCount;
         rounds[roundId] = Round({
             creator: msg.sender,
-            startBlock: startBlock,
-            endBlock: startBlock + durationBlocks,
-            revealEndBlock: startBlock + durationBlocks + revealBlocks,
+            startBlock: 0,
+            endBlock: 0,
+            revealEndBlock: 0,
+            durationBlocks: durationBlocks,
+            revealBlocks: revealBlocks,
             maxPlayers: maxPlayers,
             playerCount: 0,
             totalTaps: 0,
             settled: false
         });
-        emit RoundCreated(
-            roundId,
-            msg.sender,
-            startBlock,
-            startBlock + durationBlocks,
-            startBlock + durationBlocks + revealBlocks,
-            maxPlayers
-        );
+        emit RoundCreated(roundId, msg.sender, durationBlocks, revealBlocks, maxPlayers);
+    }
+
+    function startRound(uint256 roundId, uint32 leadBlocks) external {
+        Round storage round = rounds[roundId];
+        if (round.creator == address(0)) revert InvalidRound();
+        if (msg.sender != round.creator) revert OnlyRoundCreator();
+        if (round.startBlock != 0) revert RoundAlreadyStarted();
+        if (leadBlocks == 0 || leadBlocks > MAX_START_LEAD_BLOCKS) revert InvalidSchedule();
+
+        round.startBlock = uint64(block.number + leadBlocks);
+        round.endBlock = round.startBlock + round.durationBlocks;
+        round.revealEndBlock = round.endBlock + round.revealBlocks;
+        emit RoundStarted(roundId, round.startBlock, round.endBlock, round.revealEndBlock);
     }
 
     function joinRound(uint256 roundId, bytes32 commitment, bytes16 nickname) external {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
-        if (block.number >= round.startBlock) revert JoinWindowClosed();
+        if (round.startBlock != 0) revert JoinWindowClosed();
         if (round.playerCount >= round.maxPlayers) revert PlayerLimitReached();
 
         Player storage player = players[roundId][msg.sender];
@@ -121,7 +127,9 @@ contract Tapacity {
     function tap(uint256 roundId) external {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
-        if (block.number < round.startBlock || block.number >= round.endBlock) revert TapWindowClosed();
+        if (round.startBlock == 0 || block.number < round.startBlock || block.number >= round.endBlock) {
+            revert TapWindowClosed();
+        }
 
         Player storage player = players[roundId][msg.sender];
         if (!player.joined) revert NotJoined();
@@ -133,7 +141,9 @@ contract Tapacity {
     function revealGoal(uint256 roundId, uint32 goal, bytes32 salt) external {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
-        if (block.number < round.endBlock || block.number >= round.revealEndBlock) revert RevealWindowClosed();
+        if (round.startBlock == 0 || block.number < round.endBlock || block.number >= round.revealEndBlock) {
+            revert RevealWindowClosed();
+        }
 
         Player storage player = players[roundId][msg.sender];
         if (!player.joined) revert NotJoined();
@@ -150,7 +160,7 @@ contract Tapacity {
     function settleRound(uint256 roundId) external {
         Round storage round = rounds[roundId];
         if (round.creator == address(0)) revert InvalidRound();
-        if (block.number < round.revealEndBlock) revert SettlementWindowOpen();
+        if (round.startBlock == 0 || block.number < round.revealEndBlock) revert SettlementWindowOpen();
         if (round.settled) revert AlreadySettled();
 
         address[] memory ranking = participantAddresses[roundId];

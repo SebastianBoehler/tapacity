@@ -23,6 +23,7 @@ export type SubmissionResult =
   | { attemptId: string; status: "failed"; error: string };
 
 const TAP_GAS_LIMIT = 90_000n;
+const MAX_CONCURRENT_SUBMISSIONS = 3;
 
 export function createSponsoredSubmitter({
   contract,
@@ -34,34 +35,63 @@ export function createSponsoredSubmitter({
   send: SendTransaction;
 }) {
   const attempts = new Map<string, Promise<SubmissionResult>>();
+  const queue: Array<{
+    attemptId: string;
+    roundId: bigint;
+    resolve: (result: SubmissionResult) => void;
+  }> = [];
+  let active = 0;
+
+  const execute = async (roundId: bigint, attemptId: string): Promise<SubmissionResult> => send(
+    {
+      to: contract,
+      data: encodeFunctionData({ abi: tapacityAbi, functionName: "tap", args: [roundId] }),
+      value: 0n,
+      gasLimit: TAP_GAS_LIMIT,
+    },
+    {
+      address: wallet,
+      sponsor: true,
+      uiOptions: { showWalletUIs: false },
+    },
+  )
+    .then(({ hash }) => ({ attemptId, status: "submitted" as const, hash }))
+    .catch((error: unknown) => ({
+      attemptId,
+      status: "failed" as const,
+      error: error instanceof Error ? error.message : "Sponsored transaction failed",
+    }));
+
+  const pump = () => {
+    while (active < MAX_CONCURRENT_SUBMISSIONS && queue.length > 0) {
+      const job = queue.shift();
+      if (!job) return;
+      active += 1;
+      void execute(job.roundId, job.attemptId).then(job.resolve).finally(() => {
+        active -= 1;
+        pump();
+      });
+    }
+  };
 
   function submitTap(roundId: bigint, attemptId: string) {
     const previous = attempts.get(attemptId);
     if (previous) return previous;
 
-    const submission = send(
-      {
-        to: contract,
-        data: encodeFunctionData({ abi: tapacityAbi, functionName: "tap", args: [roundId] }),
-        value: 0n,
-        gasLimit: TAP_GAS_LIMIT,
-      },
-      {
-        address: wallet,
-        sponsor: true,
-        uiOptions: { showWalletUIs: false },
-      },
-    )
-      .then(({ hash }) => ({ attemptId, status: "submitted" as const, hash }))
-      .catch((error: unknown) => ({
-        attemptId,
-        status: "failed" as const,
-        error: error instanceof Error ? error.message : "Sponsored transaction failed",
-      }));
+    const submission = new Promise<SubmissionResult>((resolve) => {
+      queue.push({ roundId, attemptId, resolve });
+      pump();
+    });
 
     attempts.set(attemptId, submission);
     return submission;
   }
 
-  return { submitTap };
+  function cancelPending(reason: string) {
+    for (const job of queue.splice(0)) {
+      job.resolve({ attemptId: job.attemptId, status: "failed", error: reason });
+    }
+  }
+
+  return { cancelPending, submitTap };
 }

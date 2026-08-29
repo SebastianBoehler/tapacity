@@ -45,6 +45,21 @@ describe("sponsored transaction seam", () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
+  it("limits concurrent sponsor requests instead of stampeding Privy", async () => {
+    const releases: Array<(value: { hash: typeof hash }) => void> = [];
+    const send = vi.fn(() => new Promise<{ hash: typeof hash }>((resolve) => releases.push(resolve)));
+    const submitter = createSponsoredSubmitter({ contract, wallet, send });
+    const submissions = [1, 2, 3, 4].map((tap) => submitter.submitTap(7n, `tap-${tap}`));
+
+    await Promise.resolve();
+    expect(send).toHaveBeenCalledTimes(3);
+    releases.shift()?.({ hash });
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(4));
+
+    for (const release of releases) release({ hash });
+    await Promise.all(submissions);
+  });
+
   it("tracks a submitted tap through speculative and canonical commitment states", async () => {
     const send = vi.fn().mockResolvedValue({ hash });
     const result = await createSponsoredSubmitter({ contract, wallet, send }).submitTap(7n, "tap-3");

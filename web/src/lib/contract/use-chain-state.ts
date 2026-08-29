@@ -10,6 +10,8 @@ export type RoundState = {
   startBlock: bigint;
   endBlock: bigint;
   revealEndBlock: bigint;
+  durationBlocks: number;
+  revealBlocks: number;
   maxPlayers: number;
   playerCount: number;
   totalTaps: bigint;

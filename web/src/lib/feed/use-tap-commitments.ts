@@ -24,6 +24,7 @@ export function useTapCommitments(
   const [taps, setTaps] = useState<Map<`0x${string}`, TapCommitmentState>>(new Map());
 
   useEffect(() => {
+    if (startBlock === 0n || endBlock === 0n) return;
     let active = true;
     void publicClient.getBlock({ blockTag: "finalized" }).then(async ({ number: finalizedBlock }) => {
       const toBlock = finalizedBlock < endBlock ? finalizedBlock : endBlock - 1n;

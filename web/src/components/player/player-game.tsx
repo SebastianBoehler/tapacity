@@ -17,9 +17,11 @@ import {
 } from "@/lib/session/goal-session";
 import { useFinalityPersistence } from "@/lib/session/use-finality-persistence";
 import { createSponsoredSubmitter } from "@/lib/transactions/sponsored-submitter";
+import { retryRateLimited } from "@/lib/transactions/retry-rate-limit";
 import { useTapOutcomes } from "@/lib/transactions/use-tap-outcomes";
 import { Chainprint } from "./chainprint";
 import { Header, Metric, StatusScreen } from "./player-ui";
+import { currentPhase, phaseLabel } from "./round-phase";
 import { TransactionTrack } from "./transaction-track";
 
 export function PlayerGame({ contract, roundId }: { contract: `0x${string}`; roundId: bigint }) {
@@ -135,12 +137,16 @@ function RoundGame({
     [address, contract, sendTransaction],
   );
 
+  useEffect(() => {
+    if (phase !== "live") submitter.cancelPending("Tap window closed before sponsorship");
+  }, [phase, submitter]);
+
   const join = async () => {
     if (goal < 1 || goal > 200) {
       setError("Choose a goal from 1 to 200 taps.");
       return;
     }
-    if (blockNumber >= round.startBlock) return;
+    if (round.startBlock !== 0n) return;
     setBusy(true);
     setError(undefined);
     const next = session ?? createGoalSession(goal, nickname.trim());
@@ -167,13 +173,14 @@ function RoundGame({
     if (!session || !player?.joined || player.revealed || revealStarted.current) return;
     revealStarted.current = true;
     try {
-      await sponsor(
+      await retryRateLimited(() => sponsor(
         encodeFunctionData({
           abi: tapacityAbi,
           functionName: "revealGoal",
           args: [roundId, session.goal, session.salt],
         }),
         120_000n,
+      ),
       );
     } catch (cause) {
       revealStarted.current = false;
@@ -234,10 +241,11 @@ function RoundGame({
       <main className="setup-screen">
         <Header roundId={roundId} feed={feed.connection} />
         <h1>Predict your taps.</h1>
+        <p className="cost-note">{round.playerCount}/{round.maxPlayers} players joined · host starts the shared round</p>
         <form className="setup-form" onSubmit={(event) => { event.preventDefault(); void join(); }}>
           <label htmlFor="goal">Goal<input id="goal" name="goal" type="number" inputMode="numeric" min={1} max={200} required value={goal} onChange={(event) => setGoal(Number(event.target.value))} /></label>
           <label htmlFor="nickname">Nickname · optional<input id="nickname" name="nickname" autoComplete="nickname" maxLength={16} value={nickname} onChange={(event) => setNickname(event.target.value)} /></label>
-          <button type="submit" className="primary-button" disabled={busy || blockNumber >= round.startBlock}>
+          <button type="submit" className="primary-button" disabled={busy || round.startBlock !== 0n}>
             {busy ? "Sponsoring commitment…" : session ? "Resubmit commitment" : "Lock goal"}
           </button>
         </form>
@@ -254,7 +262,7 @@ function RoundGame({
       <Header roundId={roundId} feed={feed.connection} />
       <section className="phase-panel">
         <h2>{phaseLabel(phase)}</h2>
-        <strong>{phase === "lobby" ? `${round.startBlock - blockNumber} BLOCKS` : phase === "live" ? `${round.endBlock - blockNumber} BLOCKS` : "—"}</strong>
+        <strong>{phase === "waiting" ? `${round.playerCount}/${round.maxPlayers} JOINED` : phase === "lobby" ? `${round.startBlock - blockNumber} BLOCKS` : phase === "live" ? `${round.endBlock - blockNumber} BLOCKS` : "—"}</strong>
       </section>
       {session && <TransactionTrack goal={session.goal} attempted={session.attempted} proposed={Math.max(feed.proposed, session.submitted)} finalized={finalized} />}
       <div className="telemetry-row" aria-label="Transaction telemetry">
@@ -273,22 +281,11 @@ function RoundGame({
         onPointerDown={(event) => { event.preventDefault(); tap(); }}
         onKeyDown={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); tap(); } }}
       >
-        <span>{phase === "live" ? "Tap" : phase === "lobby" ? "Armed" : "Locked"}</span>
+        <span>{phase === "live" ? "Tap" : phase === "waiting" ? "Waiting" : phase === "lobby" ? "Armed" : "Locked"}</span>
         <small>One accepted tap · one sponsored transaction</small>
       </button>
     </main>
   );
-}
-
-function currentPhase(block: bigint, round: RoundState) {
-  if (block < round.startBlock) return "lobby";
-  if (block < round.endBlock) return "live";
-  if (block < round.revealEndBlock) return "reveal";
-  return "settlement";
-}
-
-function phaseLabel(phase: string) {
-  return { lobby: "Round armed", live: "Execution window", reveal: "Automatic reveal", settlement: "Waiting for settlement" }[phase];
 }
 
 function message(cause: unknown) {

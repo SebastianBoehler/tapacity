@@ -17,12 +17,13 @@ contract TapacityTest is Test {
     }
 
     function testTapOnlyInsideRoundWindow() external {
-        uint256 roundId = game.createRound(105, 5, 3, 15);
+        uint256 roundId = game.createRound(5, 3, 15);
         bytes32 salt = keccak256("salt");
         bytes32 commitment = game.goalCommitment(roundId, player, 10, salt);
 
         vm.prank(player);
         game.joinRound(roundId, commitment, bytes16("PULSE"));
+        game.startRound(roundId, 5);
 
         vm.roll(105);
         vm.prank(player);
@@ -36,12 +37,13 @@ contract TapacityTest is Test {
     }
 
     function testRevealRequiresExactCommitmentInsideRevealWindow() external {
-        uint256 roundId = game.createRound(105, 5, 3, 15);
+        uint256 roundId = game.createRound(5, 3, 15);
         bytes32 salt = keccak256("secret salt");
         bytes32 commitment = game.goalCommitment(roundId, player, 10, salt);
 
         vm.prank(player);
         game.joinRound(roundId, commitment, bytes16("PULSE"));
+        game.startRound(roundId, 5);
 
         vm.roll(110);
         vm.expectRevert(Tapacity.InvalidReveal.selector);
@@ -54,10 +56,11 @@ contract TapacityTest is Test {
     }
 
     function testSettlementUsesDeterministicScoreAndTieOrder() external {
-        uint256 roundId = game.createRound(105, 5, 3, 15);
+        uint256 roundId = game.createRound(5, 3, 15);
         _join(roundId, pulse, 8);
         _join(roundId, vector, 8);
         _join(roundId, apex, 18);
+        game.startRound(roundId, 5);
 
         vm.roll(105);
         _tap(roundId, pulse, 6);
@@ -87,6 +90,31 @@ contract TapacityTest is Test {
         (uint32 accuracyPpm, uint64 score) = game.playerScore(roundId, vector);
         assertEq(accuracyPpm, 750_000);
         assertEq(score, 4_500_000);
+    }
+
+    function testLobbyStaysOpenUntilCreatorStartsAndThenFreezesRoster() external {
+        uint256 roundId = game.createRound(5, 3, 15);
+        _join(roundId, pulse, 8);
+
+        Tapacity.Round memory lobby = game.getRound(roundId);
+        assertEq(lobby.startBlock, 0);
+        assertEq(lobby.playerCount, 1);
+
+        vm.prank(player);
+        vm.expectRevert(Tapacity.OnlyRoundCreator.selector);
+        game.startRound(roundId, 5);
+
+        game.startRound(roundId, 5);
+        Tapacity.Round memory started = game.getRound(roundId);
+        assertEq(started.startBlock, 105);
+        assertEq(started.endBlock, 110);
+        assertEq(started.revealEndBlock, 113);
+
+        bytes32 salt = keccak256(abi.encode(vector));
+        bytes32 commitment = game.goalCommitment(roundId, vector, 8, salt);
+        vm.prank(vector);
+        vm.expectRevert(Tapacity.JoinWindowClosed.selector);
+        game.joinRound(roundId, commitment, bytes16(0));
     }
 
     function _join(uint256 roundId, address account, uint32 goal) private {
